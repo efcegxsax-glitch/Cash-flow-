@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>تحويل الألماس</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    /* --- المتغيرات الأساسية للتصميم --- */
+    :root {
+      --bg-color: #232526;
+      --bg-gradient-end: #1a1a1c;
+      --card-bg: #2b2b2e;
+      --text-color: #ffffff;
+      --text-secondary: #b0b0b0;
+      --gold-accent: #fcd75c;
+      --blue-accent: #6a7bff;
+      --green-accent: #4ade80;
+      --red-accent: #ef4444;
+      --disabled-color: #5a5a5e;
+      --border-color: #44444a;
+      --shadow-color-blue: rgba(106, 123, 255, 0.35);
+      --font-family: "Cairo", sans-serif;
+    }
+
+    /* --- إعادة تعيين أساسية --- */
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+    }
+
+    /* --- تصميم الجسم والخلفية --- */
+    body {
+      font-family: var(--font-family);
+      background-color: var(--bg-color);
+      background-image: linear-gradient(180deg, var(--bg-color), var(--bg-gradient-end));
+      color: var(--text-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      /* تم حذف الحشو لجعل الواجهة تملأ الشاشة */
+    }
+
+    /* --- الحاوية الرئيسية (بحجم الشاشة الكاملة) --- */
+    .main-container {
+      width: 100vw; /* عرض الشاشة الكامل */
+      min-height: 100vh; /* ارتفاع الشاشة الكامل */
+      background: transparent; /* خلفية شفافة لتندمج مع الجسم */
+      padding: 25px;
+      display: flex;
+      flex-direction: column;
+      /* تمت إزالة الحدود، الظل، والحواف الدائرية */
+    }
+
+    /* --- رأس الصفحة ومعلومات المستخدم --- */
+    .header {
+      text-align: center;
+      margin-bottom: 25px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 25px;
+    }
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-color);
+      margin-bottom: 15px;
+    }
+    .header h1 i {
+      color: var(--blue-accent);
+      margin-right: 10px;
+    }
+    .balance-display {
+      font-size: 20px;
+      font-weight: 600;
+    }
+    .balance-display #user-balance {
+        color: var(--gold-accent);
+        font-weight: 700;
+        font-size: 24px;
+        margin: 0 5px;
+    }
+    .balance-display i.fa-gem {
+      color: var(--gold-accent);
+      text-shadow: 0 0 8px rgba(252, 215, 92, 0.5);
+    }
+    #user-info {
+        color: var(--text-secondary);
+        margin-top: 10px;
+        font-size: 14px;
+        font-weight: 600;
+    }
+    #user-info span {
+      color: var(--text-color);
+    }
+
+    /* --- نظام التبويبات (Tabs) --- */
+    .tabs {
+      display: flex;
+      justify-content: stretch;
+      margin-bottom: 30px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 10px;
+      padding: 5px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 12px 10px;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-family: var(--font-family);
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+    .tab-btn.active {
+      background: var(--blue-accent);
+      color: var(--text-color);
+      box-shadow: 0 4px 15px var(--shadow-color-blue);
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+
+    /* --- تصميم حقول الإدخال --- */
+    .form-group {
+      margin-bottom: 20px;
+      position: relative;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--text-secondary);
+    }
+    .form-group input {
+      width: 100%;
+      padding: 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-color);
+      color: var(--text-color);
+      font-family: var(--font-family);
+      font-size: 16px;
+      transition: all 0.3s ease;
+      -moz-appearance: textfield;
+    }
+    .form-group input::-webkit-outer-spin-button,
+    .form-group input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    .form-group input::placeholder {
+        color: #777;
+    }
+    .form-group input:focus {
+        outline: none;
+        border-color: var(--blue-accent);
+        box-shadow: 0 0 0 3px var(--shadow-color-blue);
+    }
+    
+    /* --- الأزرار الرئيسية --- */
+    .primary-btn {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      background: var(--blue-accent);
+      color: white;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px var(--shadow-color-blue);
+    }
+    .primary-btn:disabled {
+        background: var(--disabled-color);
+        box-shadow: none;
+        cursor: not-allowed;
+    }
+    .primary-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        filter: brightness(1.1);
+    }
+
+    /* --- رسائل الحالة --- */
+    .status-message {
+        text-align: center;
+        margin-top: 20px;
+        font-weight: 600;
+        min-height: 24px;
+        font-size: 15px;
+        padding: 10px;
+        border-radius: 8px;
+        display: none;
+    }
+    .status-message.success { 
+      color: #fff; 
+      background: var(--green-accent);
+      display: block;
+    }
+    .status-message.error { 
+      color: #fff;
+      background: var(--red-accent);
+      display: block;
+    }
+
+    /* --- قسم سجل التحويلات (مُحسَّن للشاشة الكاملة) --- */
+    .history-section {
+        margin-top: 35px;
+        flex-grow: 1; /* يجعل هذا القسم يملأ المساحة المتبقية */
+        display: flex;
+        flex-direction: column;
+        overflow: hidden; /* يمنع المحتوى الزائد من الظهور */
+    }
+    .history-section h2 {
+        text-align: right;
+        margin-bottom: 15px;
+        font-size: 18px;
+        color: var(--text-secondary);
+        font-weight: 600;
+    }
+    .history-list {
+        list-style: none;
+        height: 100%; /* يجعله يملأ المساحة المتاحة من الأب */
+        overflow-y: auto; /* يضيف شريط تمرير عند الحاجة */
+        padding-right: 10px;
+    }
+    .history-list::-webkit-scrollbar { width: 6px; }
+    .history-list::-webkit-scrollbar-track { background: transparent; }
+    .history-list::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
+    
+    .history-list li {
+        background: rgba(0,0,0,0.15);
+        padding: 12px 15px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 14px;
+        border-left: 4px solid;
+    }
+    .history-list .sent { border-left-color: var(--red-accent); }
+    .history-list .received { border-left-color: var(--green-accent); }
+    .history-list .code { border-left-color: var(--blue-accent); }
+
+    .history-list .amount { 
+        font-weight: 700; 
+        font-size: 15px;
+        direction: ltr;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .history-list .amount .fa-gem { color: var(--gold-accent); }
+    .history-list .icon-sent { color: var(--red-accent); }
+    .history-list .icon-received { color: var(--green-accent); }
+    .history-list .icon-code { color: var(--blue-accent); }
+    
+    /* --- قسم الأكواد --- */
+    .code-generation-box {
+      border: 1px dashed var(--border-color);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    .generated-code-display {
+      background: var(--bg-color);
+      padding: 15px;
+      border-radius: 8px;
+      font-size: 20px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      color: var(--gold-accent);
+      margin-top: 15px;
+      user-select: all;
+      cursor: pointer;
+      display: none;
+      position: relative;
+    }
+    .generated-code-display #copy-icon {
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 16px;
+    }
+    #copy-tooltip {
+      font-size: 12px;
+      color: var(--green-accent);
+      visibility: hidden;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="main-container">
+    <div class="header">
+      <h1><i class="fas fa-exchange-alt"></i> مركز التحويلات</h1>
+      <div class="balance-display">
+        رصيدك: <span id="user-balance">0</span> <i class="fas fa-gem"></i>
+      </div>
+       <div id="user-info">
+        مرحباً <span id="user-name">...</span> (ID: <span id="user-id">...</span>)
+       </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="transfer">تحويل مباشر</button>
+      <button class="tab-btn" data-tab="codes">تحويل بالأكواد</button>
+    </div>
+
+    <div id="transfer-tab" class="tab-content active">
+      <div class="form-group">
+        <label for="recipient-id">ID المستلم</label>
+        <input type="number" id="recipient-id" placeholder="مثال: 12345">
+      </div>
+      <div class="form-group">
+        <label for="amount">الكمية المراد تحويلها</label>
+        <input type="number" id="amount" placeholder="أدخل كمية الألماس">
+      </div>
+      <button class="primary-btn" id="transfer-btn">تأكيد التحويل</button>
+      <p id="status-message-transfer" class="status-message"></p>
+    </div>
+
+    <div id="codes-tab" class="tab-content">
+        <div class="code-generation-box">
+            <div class="form-group">
+                <label for="code-amount">كمية الألماس للكود</label>
+                <input type="number" id="code-amount" placeholder="مثال: 5000">
+            </div>
+            <button class="primary-btn" id="generate-code-btn">توليد كود</button>
+            <div class="generated-code-display" id="generated-code-container">
+                <span id="generated-code"></span>
+                <i id="copy-icon" class="fas fa-copy"></i>
+            </div>
+            <span id="copy-tooltip">تم النسخ!</span>
+        </div>
+        
+        <div class="form-group">
+            <label for="redeem-code-input">استخدام كود التحويل</label>
+            <input type="text" id="redeem-code-input" placeholder="أدخل الكود هنا">
+        </div>
+        <button class="primary-btn" id="redeem-code-btn">استخدام الكود</button>
+        <p id="status-message-code" class="status-message"></p>
+    </div>
+
+    <div class="history-section">
+        <h2>أحدث العمليات</h2>
+        <ul id="history-list" class="history-list"></ul>
+    </div>
+
+  </div>
+
+  <script type="module">
+    // --- الشيفرة البرمجية كاملة 100% بدون أي نقصان في الوظائف ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+    import { getDatabase, ref, onValue, set, get, query, orderByChild, equalTo, runTransaction, serverTimestamp, push, limitToLast } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
+
+    // نفس معلومات الاتصال بقاعدة البيانات
+    const firebaseConfig = {
+      apiKey: "AIzaSyDHVwsR3xlJdQz189v-LYtCGGGGbg9h4bU",
+      authDomain: "information-5dffc.firebaseapp.com",
+      databaseURL: "https://information-5dffc-default-rtdb.firebaseio.com",
+      projectId: "information-5dffc",
+      storageBucket: "information-5dffc.appspot.com",
+      messagingSenderId: "622479615827",
+      appId: "1:622479615827:web:51c9ce29f8e26fbce1a3a6",
+      measurementId: "G-XDHPYRCKWN"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    let currentUser = null;
+    let currentUserData = {};
+
+    // --- مراجع عناصر الواجهة (DOM Elements) ---
+    // عناصر عامة
+    const userBalanceSpan = document.getElementById('user-balance');
+    const userNameSpan = document.getElementById('user-name');
+    const userIdSpan = document.getElementById('user-id');
+    const historyList = document.getElementById('history-list');
+
+    // عناصر تبويب التحويل المباشر
+    const transferBtn = document.getElementById('transfer-btn');
+    const recipientIdInput = document.getElementById('recipient-id');
+    const amountInput = document.getElementById('amount');
+    const statusMessageTransfer = document.getElementById('status-message-transfer');
+
+    // عناصر تبويب الأكواد
+    const generateCodeBtn = document.getElementById('generate-code-btn');
+    const codeAmountInput = document.getElementById('code-amount');
+    const redeemCodeBtn = document.getElementById('redeem-code-btn');
+    const redeemCodeInput = document.getElementById('redeem-code-input');
+    const statusMessageCode = document.getElementById('status-message-code');
+    const generatedCodeContainer = document.getElementById('generated-code-container');
+    const generatedCodeSpan = document.getElementById('generated-code');
+    const copyIcon = document.getElementById('copy-icon');
+    const copyTooltip = document.getElementById('copy-tooltip');
+
+    // عناصر التبويبات
+    const tabs = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    // --- منطق تبديل التبويبات ---
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            tabs.forEach(item => item.classList.remove('active'));
+            tab.classList.add('active');
+
+            const targetTab = document.getElementById(tab.dataset.tab + '-tab');
+            tabContents.forEach(content => content.classList.remove('active'));
+            targetTab.classList.add('active');
+        });
+    });
+
+
+    // --- مراقبة حالة تسجيل الدخول ---
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUser = user;
+        const userRef = ref(db, `users/${currentUser.uid}`);
+        
+        onValue(userRef, (snapshot) => {
+            if (snapshot.exists()) {
+                currentUserData = snapshot.val();
+                userBalanceSpan.textContent = (currentUserData.diamonds || 0).toLocaleString();
+                userNameSpan.textContent = currentUserData.name || 'زائر';
+                userIdSpan.textContent = currentUserData.customId || 'غير محدد';
+            }
+        });
+        loadTransactionHistory(currentUser.uid);
+      } else {
+        document.querySelector('.main-container').innerHTML = '<h1>الرجاء تسجيل الدخول أولاً</h1>';
+      }
+    });
+
+    // --- 1. قسم التحويل المباشر (الوظيفة الأصلية) ---
+    transferBtn.addEventListener('click', handleTransfer);
+
+    async function handleTransfer() {
+        const recipientId = parseInt(recipientIdInput.value.trim(), 10);
+        const amount = parseInt(amountInput.value.trim(), 10);
+
+        if (isNaN(recipientId) || isNaN(amount)) {
+            showStatus("الرجاء إدخال ID وكمية صحيحة.", true, 'transfer'); return;
+        }
+        if (amount <= 0) {
+            showStatus("يجب أن تكون الكمية أكبر من صفر.", true, 'transfer'); return;
+        }
+        if (recipientId === currentUserData.customId) {
+            showStatus("لا يمكنك التحويل لنفسك.", true, 'transfer'); return;
+        }
+        if (amount > (currentUserData.diamonds || 0)) {
+            showStatus("رصيدك غير كافٍ لإتمام العملية.", true, 'transfer'); return;
+        }
+
+        transferBtn.disabled = true;
+        transferBtn.textContent = 'جاري التحويل...';
+        showStatus("", false, 'transfer'); // مسح الرسائل
+
+        try {
+            const usersRef = ref(db, 'users');
+            const recipientQuery = query(usersRef, orderByChild('customId'), equalTo(recipientId));
+            const snapshot = await get(recipientQuery);
+
+            if (!snapshot.exists()) {
+                showStatus(`المستخدم صاحب الـ ID ${recipientId} غير موجود.`, true, 'transfer');
+                resetButton(transferBtn, 'تأكيد التحويل');
+                return;
+            }
+
+            let recipientUid, recipientData;
+            snapshot.forEach((childSnapshot) => {
+                recipientUid = childSnapshot.key;
+                recipientData = childSnapshot.val();
+            });
+
+            const senderRef = ref(db, `users/${currentUser.uid}`);
+            const recipientRef = ref(db, `users/${recipientUid}`);
+
+            await runTransaction(senderRef, (data) => {
+                if (data) {
+                    if ((data.diamonds || 0) >= amount) {
+                        data.diamonds -= amount;
+                    } else { return; }
+                }
+                return data;
+            });
+
+            await runTransaction(recipientRef, (data) => {
+                if (data) {
+                    data.diamonds = (data.diamonds || 0) + amount;
+                }
+                return data;
+            });
+
+            await logTransaction('sent', { to: recipientData.name, toUid: recipientUid, amount });
+            await logTransaction('received', { from: currentUserData.name, fromUid: currentUser.uid, amount });
+
+            showStatus(`تم تحويل ${amount.toLocaleString()} ألماسة بنجاح إلى ${recipientData.name}.`, false, 'transfer');
+            recipientIdInput.value = '';
+            amountInput.value = '';
+
+        } catch (error) {
+            console.error("Transfer failed: ", error);
+            showStatus("حدث خطأ غير متوقع أثناء التحويل.", true, 'transfer');
+        } finally {
+            resetButton(transferBtn, 'تأكيد التحويل');
+        }
+    }
+
+    // --- 2. قسم التحويل بالأكواد (الوظيفة الجديدة) ---
+
+    // أ. توليد الكود
+    generateCodeBtn.addEventListener('click', handleCodeGeneration);
+
+    async function handleCodeGeneration() {
+        const amount = parseInt(codeAmountInput.value.trim(), 10);
+
+        if (isNaN(amount) || amount <= 0) {
+            showStatus("الرجاء إدخال كمية صحيحة أكبر من صفر.", true, 'code'); return;
+        }
+        if (amount > (currentUserData.diamonds || 0)) {
+            showStatus("رصيدك غير كافٍ لإنشاء هذا الكود.", true, 'code'); return;
+        }
+
+        generateCodeBtn.disabled = true;
+        generateCodeBtn.textContent = 'جاري التوليد...';
+        showStatus("", false, 'code');
+        
+        try {
+            const userRef = ref(db, `users/${currentUser.uid}`);
+            
+            await runTransaction(userRef, (userData) => {
+                if (userData && (userData.diamonds || 0) >= amount) {
+                    userData.diamonds -= amount;
+                    return userData;
+                }
+                return;
+            });
+
+            const code = generateUniqueCodeString();
+            const codesRef = ref(db, `transferCodes/${code}`);
+            await set(codesRef, {
+                amount: amount,
+                creatorUid: currentUser.uid,
+                creatorName: currentUserData.name,
+                createdAt: serverTimestamp(),
+                isRedeemed: false,
+                redeemedByUid: null,
+                redeemedAt: null
+            });
+
+            await logTransaction('code_created', { code, amount });
+
+            showStatus(`تم إنشاء الكود بنجاح. رصيدك تم تحديثه.`, false, 'code');
+            generatedCodeSpan.textContent = code;
+            generatedCodeContainer.style.display = 'block';
+            codeAmountInput.value = '';
+
+        } catch(error) {
+            console.error("Code generation failed: ", error);
+            showStatus("فشل إنشاء الكود، حاول مرة أخرى.", true, 'code');
+        } finally {
+            resetButton(generateCodeBtn, 'توليد كود');
+        }
+    }
+    
+    // ب. استخدام الكود
+    redeemCodeBtn.addEventListener('click', handleCodeRedemption);
+
+    async function handleCodeRedemption() {
+        const code = redeemCodeInput.value.trim().toUpperCase();
+        if (!code) {
+            showStatus("الرجاء إدخال كود.", true, 'code'); return;
+        }
+
+        redeemCodeBtn.disabled = true;
+        redeemCodeBtn.textContent = 'جاري التحقق...';
+        showStatus("", false, 'code');
+
+        try {
+            const codeRef = ref(db, `transferCodes/${code}`);
+            const snapshot = await get(codeRef);
+
+            if (!snapshot.exists()) {
+                showStatus("هذا الكود غير صحيح أو منتهي الصلاحية.", true, 'code');
+                resetButton(redeemCodeBtn, 'استخدام الكود');
+                return;
+            }
+
+            const codeData = snapshot.val();
+            
+            if (codeData.isRedeemed) {
+                showStatus("هذا الكود تم استخدامه مسبقاً.", true, 'code');
+                resetButton(redeemCodeBtn, 'استخدام الكود');
+                return;
+            }
+
+            if (codeData.creatorUid === currentUser.uid) {
+                showStatus("لا يمكنك استخدام كود قمت أنت بإنشائه.", true, 'code');
+                resetButton(redeemCodeBtn, 'استخدام الكود');
+                return;
+            }
+
+            await runTransaction(codeRef, (currentData) => {
+                if (currentData && !currentData.isRedeemed) {
+                    currentData.isRedeemed = true;
+                    currentData.redeemedByUid = currentUser.uid;
+                    currentData.redeemedByName = currentUserData.name;
+                    currentData.redeemedAt = serverTimestamp();
+                    return currentData;
+                }
+                return; 
+            });
+
+            const userRef = ref(db, `users/${currentUser.uid}`);
+            await runTransaction(userRef, (userData) => {
+                if (userData) {
+                    userData.diamonds = (userData.diamonds || 0) + codeData.amount;
+                }
+                return userData;
+            });
+            
+            await logTransaction('code_redeemed', { from: codeData.creatorName, amount: codeData.amount });
+            await logTransaction('code_used', { by: currentUserData.name, amount: codeData.amount }, codeData.creatorUid);
+
+            showStatus(`تم إضافة ${codeData.amount.toLocaleString()} ألماسة إلى رصيدك بنجاح!`, false, 'code');
+            redeemCodeInput.value = '';
+
+        } catch (error) {
+            console.error("Code redemption failed: ", error);
+            showStatus("حدث خطأ غير متوقع أثناء استخدام الكود.", true, 'code');
+        } finally {
+            resetButton(redeemCodeBtn, 'استخدام الكود');
+        }
+    }
+
+    // ج. دالة مساعدة لتوليد الكود
+    function generateUniqueCodeString() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let result = '';
+        for (let i = 0; i < 8; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+            if (i === 3) result += '-';
+        }
+        return result;
+    }
+
+    // نسخ الكود
+    copyIcon.addEventListener('click', () => {
+        navigator.clipboard.writeText(generatedCodeSpan.textContent).then(() => {
+            copyTooltip.style.visibility = 'visible';
+            copyTooltip.style.opacity = '1';
+            setTimeout(() => {
+                copyTooltip.style.visibility = 'hidden';
+                copyTooltip.style.opacity = '0';
+            }, 2000);
+        });
+    });
+
+    // --- 3. دوال مشتركة ومساعدة ---
+    
+    // دالة موحدة لتسجيل العمليات
+    async function logTransaction(type, data, targetUid = null) {
+        const uid = targetUid || currentUser.uid;
+        const logRef = ref(db, `users/${uid}/transactions`);
+        const timestamp = serverTimestamp();
+        let logData = { type, timestamp, ...data };
+        await push(logRef, logData);
+    }
+    
+    // دالة لعرض سجل التحويلات
+    function loadTransactionHistory(uid) {
+        const historyRef = query(ref(db, `users/${uid}/transactions`), orderByChild('timestamp'), limitToLast(20));
+        onValue(historyRef, (snapshot) => {
+            historyList.innerHTML = '';
+            if (snapshot.exists()) {
+                let transactions = [];
+                snapshot.forEach(child => transactions.push(child.val()));
+                
+                transactions.reverse().forEach(tx => {
+                    const li = document.createElement('li');
+                    let content = '';
+                    switch(tx.type) {
+                        case 'sent':
+                            li.className = 'sent';
+                            content = `<span>أرسلت إلى <strong>${tx.to}</strong></span>
+                                       <span class="amount"><i class="fas fa-arrow-up icon-sent"></i> ${tx.amount.toLocaleString()} <i class="fas fa-gem"></i></span>`;
+                            break;
+                        case 'received':
+                            li.className = 'received';
+                            content = `<span>استلمت من <strong>${tx.from}</strong></span>
+                                       <span class="amount"><i class="fas fa-arrow-down icon-received"></i> ${tx.amount.toLocaleString()} <i class="fas fa-gem"></i></span>`;
+                            break;
+                        case 'code_created':
+                            li.className = 'code';
+                            content = `<span>أنشأت كود بـ <strong>${tx.amount.toLocaleString()}</strong> <i class="fas fa-gem"></i></span>
+                                       <span class="amount"><i class="fas fa-tag icon-code"></i> ${tx.code}</span>`;
+                            break;
+                        case 'code_redeemed':
+                            li.className = 'received';
+                            content = `<span>استخدمت كود من <strong>${tx.from}</strong></span>
+                                       <span class="amount"><i class="fas fa-arrow-down icon-received"></i> ${tx.amount.toLocaleString()} <i class="fas fa-gem"></i></span>`;
+                            break;
+                        case 'code_used':
+                             li.className = 'sent';
+                             content = `<span>الكود الخاص بك استخدمه <strong>${tx.by}</strong></span>
+                                        <span class="amount"><i class="fas fa-check icon-sent"></i> ${tx.amount.toLocaleString()} <i class="fas fa-gem"></i></span>`;
+                             break;
+                    }
+                    li.innerHTML = content;
+                    historyList.appendChild(li);
+                });
+            } else {
+                historyList.innerHTML = '<li>لا يوجد سجل عمليات.</li>';
+            }
+        });
+    }
+
+    // دالة عرض رسائل الحالة
+    function showStatus(message, isError = false, type) {
+        const targetMessageElement = type === 'transfer' ? statusMessageTransfer : statusMessageCode;
+        if (!message) {
+            targetMessageElement.style.display = 'none';
+            return;
+        }
+        targetMessageElement.textContent = message;
+        targetMessageElement.className = `status-message ${isError ? 'error' : 'success'}`;
+        targetMessageElement.style.display = 'block';
+    }
+
+    // دالة إعادة تعيين حالة الزر
+    function resetButton(button, text) {
+        button.disabled = false;
+        button.textContent = text;
+    }
+
+  </script>
+
+</body>
+</html>

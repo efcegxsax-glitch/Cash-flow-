@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>الملف الشخصي والمحفظة</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+
+  <style>
+    :root {
+      --bg-gradient-start: #232526; --bg-gradient-end: #1a1a1c;
+      --card-bg: #2b2b2e; --text-color: #ffffff;
+      --text-secondary: #b0b0b0; --gold-accent: #fcd75c;
+      --blue-accent: #6a7bff; --green-accent: #4ade80;
+      --red-accent: #ef4444; --disabled-color: #5a5a5e;
+      --border-color: #44444a; --shadow-color-blue: rgba(106, 123, 255, 0.35);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Cairo", sans-serif;
+      background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+      color: var(--text-color);
+      padding: 20px 20px 100px 20px;
+      min-height: 100vh;
+    }
+    .profile-container { width: 100%; max-width: 450px; margin: 0 auto; }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; margin-bottom: 25px; }
+    .top-bar .icon-btn {
+      background-color: var(--card-bg); border: 1px solid var(--border-color);
+      border-radius: 12px; width: 45px; height: 45px; display: flex;
+      justify-content: center; align-items: center; color: var(--text-color);
+      font-size: 20px; cursor: pointer; transition: background-color 0.3s, transform 0.2s;
+    }
+    .top-bar .icon-btn:hover { background-color: #3a3a3e; transform: translateY(-2px); }
+    .top-bar .balance-display {
+      background-color: var(--card-bg); border: 1px solid var(--border-color);
+      border-radius: 12px; padding: 10px 15px; display: flex;
+      align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    .stat-card {
+      background: linear-gradient(145deg, #313134, #28282b); border: 1px solid var(--border-color);
+      border-radius: 20px; padding: 20px; text-align: center;
+      margin-bottom: 25px; box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    }
+    .stat-card .value {
+      font-size: 28px; font-weight: 800; margin-bottom: 5px;
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px; text-shadow: 0 0 10px var(--shadow-color-blue);
+    }
+    .stat-card .value.diamonds { color: var(--blue-accent); }
+    .stat-card .value i { font-size: 24px; }
+    .stat-card .label { font-size: 16px; color: var(--text-secondary); }
+
+    .daily-balance-section { position: relative; width: 300px; height: 300px; margin: 0 auto 25px auto; }
+    .daily-balance-content {
+      width: 100%; height: 100%;
+      background: transparent;
+      border-radius: 50%;
+      border: 3px solid var(--blue-accent);
+      box-shadow: 0 0 45px var(--shadow-color-blue), inset 0 0 25px rgba(0,0,0,0.5);
+      position: relative;
+      overflow: hidden;
+    }
+    .daily-balance-content canvas { border-radius: 50%; }
+    
+    #countdown-timer {
+        position: absolute; top: 50%; left: 50%;
+        transform: translate(-50%, -50%); font-size: 48px;
+        font-weight: 700; color: var(--text-color);
+        text-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+        z-index: 10; pointer-events: none;
+        width: 100%;
+        text-align: center;
+    }
+
+    .bottom-bar { display: flex; justify-content: space-between; align-items: center; background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 15px; padding: 15px 20px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); }
+    .timer-section { display: flex; align-items: center; gap: 15px; }
+    #start-timer-btn {
+      background-color: var(--blue-accent); border-radius: 50%;
+      width: 50px; height: 50px; display: flex; justify-content: center;
+      align-items: center; color: white; font-size: 22px;
+      cursor: pointer; border: none; transition: background-color 0.3s, transform 0.2s;
+    }
+    #start-timer-btn:hover:not(:disabled) { transform: scale(1.1); }
+    #start-timer-btn:disabled { 
+        background-color: var(--disabled-color); 
+        cursor: not-allowed; 
+        transform: scale(1);
+    }
+    .store-btn {
+      background: linear-gradient(to right, #6a7bff, #5566ff); border-radius: 12px;
+      padding: 12px 18px; display: flex; align-items: center;
+      gap: 10px; color: white; font-size: 16px;
+      font-weight: 600; cursor: pointer; border: none;
+    }
+    .main-nav-bar {
+      position: fixed; bottom: 15px; left: 50%; transform: translateX(-50%);
+      width: 90%; max-width: 420px; background-color: rgba(43, 43, 46, 0.85);
+      backdrop-filter: blur(10px); border: 1px solid var(--border-color);
+      border-radius: 25px; display: flex; justify-content: space-around;
+      padding: 12px 0; z-index: 1000; box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+    }
+    .main-nav-bar a {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 5px; text-decoration: none; color: var(--text-secondary);
+      font-size: 14px; font-weight: 600; transition: color 0.2s, transform 0.2s;
+    }
+    .main-nav-bar a .fas { font-size: 20px; }
+    .main-nav-bar a:hover { transform: translateY(-3px); }
+    .main-nav-bar a.active { color: var(--blue-accent); }
+    .main-nav-bar a.disabled {
+      color: var(--disabled-color);
+      pointer-events: none;
+      cursor: not-allowed;
+    }
+    
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background-color: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px);
+      display: flex; justify-content: center; align-items: center; z-index: 2000;
+      opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+    }
+    .modal-overlay.visible { opacity: 1; pointer-events: auto; }
+    .modal-content {
+      background: linear-gradient(145deg, #313134, #28282b);
+      border-radius: 20px; padding: 25px; width: 90%; max-width: 350px;
+      text-align: center; border: 1px solid var(--border-color);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative;
+      transform: scale(0.9); transition: transform 0.3s ease;
+    }
+    .modal-overlay.visible .modal-content { transform: scale(1); }
+    .modal-icon {
+      width: 60px; height: 60px; margin: 0 auto 15px;
+      background-color: var(--blue-accent); border-radius: 50%;
+      display: flex; justify-content: center; align-items: center;
+      font-size: 28px; color: white; box-shadow: 0 0 20px var(--shadow-color-blue);
+    }
+    .modal-content h3 { font-size: 22px; margin-bottom: 8px; font-weight: 700; color: var(--text-color); }
+    .modal-content p { color: var(--text-secondary); margin-bottom: 25px; font-size: 15px; }
+    .input-wrapper { position: relative; margin-bottom: 15px; }
+    .input-wrapper .fas { position: absolute; top: 50%; right: 15px; transform: translateY(-50%); color: var(--text-secondary); }
+    #code-input {
+      width: 100%; padding: 12px 40px 12px 15px;
+      border-radius: 10px; border: 1px solid #555; background: #3f3f44;
+      color: white; font-family: "Cairo", sans-serif; font-size: 16px;
+      text-align: center; letter-spacing: 2px;
+    }
+    #submit-code-btn {
+      width: 100%; padding: 12px; border: none; border-radius: 10px;
+      font-size: 16px; font-weight: 700; cursor: pointer;
+      background: var(--blue-accent); color: white;
+      box-shadow: 0 4px 15px var(--shadow-color-blue);
+      transition: all 0.3s;
+    }
+    #submit-code-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px var(--shadow-color-blue); }
+    #submit-code-btn:disabled { background-color: var(--disabled-color); cursor: not-allowed; transform: none; box-shadow: none; }
+    .close-modal-btn {
+      position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.2);
+      border: none; color: var(--text-secondary); font-size: 20px;
+      width: 30px; height: 30px; border-radius: 50%;
+      cursor: pointer; display: flex; justify-content: center; align-items: center;
+    }
+
+    #toast-container { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); z-index: 3000; display: flex; flex-direction: column; gap: 10px; }
+    .toast {
+      padding: 12px 20px; border-radius: 12px; color: white; font-weight: 600;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.4); opacity: 0;
+      transform: translateY(20px); transition: all 0.3s ease;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { background-color: var(--green-accent); }
+    .toast.error { background-color: var(--red-accent); }
+  </style>
+</head>
+<body>
+  
+  <div id="toast-container"></div>
+
+  <div class="profile-container">
+    <div class="top-bar">
+      <a href="profile.html" style="text-decoration: none;">
+        <div class="icon-btn" id="profile-btn"><i class="fas fa-user-circle"></i></div>
+      </a>
+      <div class="balance-display"><span id="dollar-balance">0.00</span><span class="label">الرصيد</span></div>
+      <div class="icon-btn" id="notifications-btn"><i class="fas fa-bell"></i></div>
+    </div>
+    <div class="stat-card">
+        <div class="value diamonds"><span id="diamond-count">0</span><i class="fas fa-gem"></i></div>
+        <span class="label">مجموع المجوهرات</span>
+    </div>
+    
+    <div class="daily-balance-section">
+      <div class="daily-balance-content" id="liquid-container">
+        <span id="countdown-timer">--:--:--</span>
+      </div>
+    </div>
+
+    <div class="bottom-bar">
+      <div class="timer-section">
+        <button id="start-timer-btn" disabled><i class="fas fa-hourglass-half"></i></button>
+      </div>
+      <button class="store-btn" id="store-btn"><span>متجر العدادات</span><i class="fas fa-plus"></i></button>
+    </div>
+  </div>
+
+  <nav class="main-nav-bar">
+    <a href="chatroom.html"><i class="fas fa-comments"></i><span>الدردشة</span></a>
+    <a href="transfer.html"><i class="fas fa-exchange-alt"></i><span>تحويل</span></a>
+    <a href="#" class="disabled"><i class="fas fa-user"></i><span>سحب</span></a>
+  </nav>
+
+  <div class="modal-overlay" id="code-modal-overlay">
+    <div class="modal-content">
+      <button class="close-modal-btn" id="close-modal-btn">&times;</button>
+      <div class="modal-icon"><i class="fas fa-key"></i></div>
+      <h3>تفعيل عداد جديد</h3>
+      <p>أدخل الكود الخاص بالعداد لزيادة قيمة مكافأتك.</p>
+      <div class="input-wrapper">
+        <i class="fas fa-ticket-alt"></i>
+        <input type="text" id="code-input" placeholder="XXXXXX">
+      </div>
+      <button id="submit-code-btn">تفعيل الكود</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+    import { getDatabase, ref, onValue, set, update, increment, get } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
+
+    // معلومات الاتصال بقاعدة البيانات لم تتغير
+    const firebaseConfig = { apiKey: "AIzaSyDHVwsR3xlJdQz189v-LYtCGGGGbg9h4bU", authDomain: "information-5dffc.firebaseapp.com", databaseURL: "https://information-5dffc-default-rtdb.firebaseio.com", projectId: "information-5dffc", storageBucket: "information-5dffc.appspot.com", messagingSenderId: "622479615827", appId: "1:622479615827:web:51c9ce29f8e26fbce1a3a6", measurementId: "G-XDHPYRCKWN" };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    const ui = {
+        dollarBalance: document.getElementById('dollar-balance'),
+        diamondCount: document.getElementById('diamond-count'),
+        countdownTimer: document.getElementById('countdown-timer'),
+        startTimerBtn: document.getElementById('start-timer-btn'),
+        storeBtn: document.getElementById('store-btn'),
+        codeModal: document.getElementById('code-modal-overlay'),
+        closeModalBtn: document.getElementById('close-modal-btn'),
+        submitCodeBtn: document.getElementById('submit-code-btn'),
+        codeInput: document.getElementById('code-input'),
+    };
+    
+    // --- [تم الحذف] ---
+    // لم نعد بحاجة إلى هذا المتغير لأن الأكواد أصبحت في قاعدة البيانات
+    // const validCounters = { ... };
+    
+    const DIAMONDS_PER_DOLLAR = 5000;
+    const BASE_REWARD = 500;
+    let timerInterval = null;
+    let currentUserData = null;
+
+    function showToast(message, type = 'success') {
+      const toastContainer = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`; toast.textContent = message;
+      toastContainer.appendChild(toast);
+      setTimeout(() => toast.classList.add('show'), 10);
+      setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000);
+    }
+
+    function updateUIWithUserData(userData) {
+        const currentDiamonds = userData.diamonds || 0;
+        ui.dollarBalance.textContent = (currentDiamonds / DIAMONDS_PER_DOLLAR).toFixed(2);
+        ui.diamondCount.textContent = currentDiamonds.toLocaleString();
+    }
+    
+    // --- كل الكود الخاص بالحركة الفيزيائية يبقى كما هو بدون تغيير ---
+    const { Engine, Render, Runner, World, Bodies, Composites, Events } = Matter;
+    const container = document.getElementById('liquid-container');
+    const width = container.offsetWidth;
+    const height = container.offsetHeight;
+    const engine = Engine.create();
+    const world = engine.world;
+    world.gravity.y = 1; world.gravity.x = 0;
+    const render = Render.create({
+        element: container,
+        engine: engine,
+        options: { width: width, height: height, wireframes: false, background: 'transparent' }
+    });
+    Render.run(render);
+    const runner = Runner.create();
+    Runner.run(runner, engine);
+    
+    let targetGravityX = 0;
+    let targetGravityY = 1;
+    Events.on(engine, 'beforeUpdate', () => {
+      const smoothingFactor = 0.05;
+      world.gravity.x += (targetGravityX - world.gravity.x) * smoothingFactor;
+      world.gravity.y += (targetGravityY - world.gravity.y) * smoothingFactor;
+    });
+
+    const circleRadius = width / 2;
+    const wallSegments = 64;
+    const walls = [];
+    for (let i = 0; i < wallSegments; i++) {
+        const angle = (i / wallSegments) * Math.PI * 2;
+        const x = circleRadius + (circleRadius - 10) * Math.cos(angle);
+        const y = circleRadius + (circleRadius - 10) * Math.sin(angle);
+        walls.push(Bodies.rectangle(x, y, 50, 20, { isStatic: true, angle: angle, render: { visible: false } }));
+    }
+    World.add(world, walls);
+    const liquid = Composites.stack(width * 0.2, 0, 20, 12, 5, 5, (x, y) => {
+        return Bodies.circle(x, y, 5, { restitution: 0.4, friction: 0.01, density: 0.001, render: { fillStyle: '#6a7bff', strokeStyle: '#5566ff', lineWidth: 1 } });
+    });
+    World.add(world, liquid);
+
+    function handleOrientation(event) {
+      const { beta, gamma } = event;
+      targetGravityX = Math.min(1.8, Math.max(-1.8, gamma / 40));
+      targetGravityY = Math.min(1.8, Math.max(-1.8, beta / 40));
+    }
+
+    if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') {
+      container.addEventListener('click', () => {
+        DeviceOrientationEvent.requestPermission().then(state => {
+          if (state === 'granted') window.addEventListener('deviceorientation', handleOrientation, true);
+        }).catch(console.error);
+      }, { once: true });
+    } else if (window.DeviceOrientationEvent) {
+      window.addEventListener('deviceorientation', handleOrientation, true);
+    }
+    // --- نهاية الكود الخاص بالحركة الفيزيائية ---
+
+    onAuthStateChanged(auth, async (user) => {
+      let activeUser = user;
+      if (!activeUser) {
+        try {
+            activeUser = (await signInAnonymously(auth)).user;
+        } catch (error) { console.error("Anonymous sign-in failed:", error); return; }
+      }
+      
+      const userRef = ref(db, `users/${activeUser.uid}`);
+
+      function updateCountdownUI(endTime) {
+          if (timerInterval) clearInterval(timerInterval);
+
+          timerInterval = setInterval(() => {
+              const now = Date.now();
+              const remainingMs = endTime - now;
+
+              if (remainingMs <= 0) {
+                  clearInterval(timerInterval);
+                  ui.countdownTimer.textContent = "المكافأة جاهزة";
+                  ui.countdownTimer.style.fontSize = "32px";
+                  ui.startTimerBtn.disabled = false;
+                  ui.startTimerBtn.innerHTML = '<i class="fas fa-gift"></i>';
+                  return;
+              }
+              
+              ui.countdownTimer.style.fontSize = "48px";
+              const hours = Math.floor(remainingMs / (1000 * 60 * 60));
+              const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+              const seconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
+
+              ui.countdownTimer.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+          }, 1000);
+      }
+
+      async function claimRewardAndStartCooldown() {
+          ui.startTimerBtn.disabled = true;
+
+          const snapshot = await get(userRef);
+          const latestUserData = snapshot.val();
+
+          const cooldownEndTime = latestUserData.rewardCooldownEnd || 0;
+          if (cooldownEndTime > Date.now()) {
+              showToast("المكافأة ليست جاهزة بعد", "error");
+              return;
+          }
+
+          const bonusReward = latestUserData.purchasedCounterValue || 0;
+          const totalReward = BASE_REWARD + bonusReward;
+          
+          const newCooldownEndTime = Date.now() + 24 * 60 * 60 * 1000;
+
+          const updates = {
+              diamonds: increment(totalReward),
+              rewardCooldownEnd: newCooldownEndTime
+          };
+          
+          await update(userRef, updates);
+          showToast(`+${totalReward.toLocaleString()} جوهرة! عد بعد 24 ساعة.`);
+      }
+
+      ui.startTimerBtn.addEventListener('click', claimRewardAndStartCooldown);
+
+      onValue(userRef, async (snapshot) => {
+        if (snapshot.exists()) {
+            const userData = snapshot.val();
+            currentUserData = userData;
+            updateUIWithUserData(userData);
+
+            const cooldownEndTime = userData.rewardCooldownEnd || 0;
+            const now = Date.now();
+
+            if (cooldownEndTime > now) {
+                ui.startTimerBtn.disabled = true;
+                ui.startTimerBtn.innerHTML = '<i class="fas fa-hourglass-half"></i>';
+                updateCountdownUI(cooldownEndTime);
+            } else {
+                if (timerInterval) clearInterval(timerInterval);
+                ui.countdownTimer.textContent = "المكافأة جاهزة";
+                ui.countdownTimer.style.fontSize = "32px";
+                ui.startTimerBtn.disabled = false;
+                ui.startTimerBtn.innerHTML = '<i class="fas fa-gift"></i>';
+            }
+
+        } else {
+            const newCustomId = Math.floor(10000 + Math.random() * 90000);
+            await set(userRef, {
+                name: `زائر ${newCustomId}`, diamonds: 1000,
+                dollarBalance: 1000 / DIAMONDS_PER_DOLLAR,
+                customId: newCustomId, createdAt: new Date().toISOString(),
+                purchasedCounterValue: 0,
+                rewardCooldownEnd: 0 // Can claim first reward immediately
+            });
+        }
+      });
+      
+      // --- [تم التعديل] ---
+      // هذه هي النسخة الجديدة من الدالة التي تتصل بقاعدة البيانات
+      async function redeemCounterCode() {
+          const enteredCode = ui.codeInput.value.trim().toUpperCase();
+          if (!enteredCode) {
+              return showToast("الرجاء إدخال كود", "error");
+          }
+
+          ui.submitCodeBtn.disabled = true;
+          ui.submitCodeBtn.textContent = '...جاري التحقق';
+
+          const codeRef = ref(db, `codes/${enteredCode}`);
+          const userRef = ref(db, `users/${auth.currentUser.uid}`);
+
+          try {
+              const snapshot = await get(codeRef);
+
+              if (!snapshot.exists()) {
+                  showToast("هذا الكود غير صالح", "error");
+                  closeModal();
+                  return;
+              }
+
+              const codeData = snapshot.val();
+
+              if (codeData.isUsed) {
+                  showToast("هذا الكود تم استخدامه بالفعل", "error");
+                  closeModal();
+                  return;
+              }
+
+              const updates = {};
+              updates[`/users/${auth.currentUser.uid}/purchasedCounterValue`] = increment(codeData.value);
+              updates[`/codes/${enteredCode}/isUsed`] = true;
+              updates[`/codes/${enteredCode}/usedBy`] = auth.currentUser.uid;
+              updates[`/codes/${enteredCode}/usedAt`] = new Date().toISOString();
+
+              await update(ref(db), updates);
+
+              showToast(`تم تفعيل عداد بقيمة ${codeData.value.toLocaleString()} جوهرة بنجاح!`);
+              closeModal();
+
+          } catch (error) {
+              console.error("Code redemption error: ", error);
+              showToast("حدث خطأ، يرجى المحاولة مرة أخرى", "error");
+          } finally {
+              ui.submitCodeBtn.disabled = false;
+              ui.submitCodeBtn.textContent = 'تفعيل الكود';
+              ui.codeInput.value = ''; // تفريغ حقل الإدخال
+          }
+      }
+      
+      // باقي الأكواد الخاصة بالواجهة الرسومية تبقى كما هي
+      ui.storeBtn.addEventListener('click', () => { ui.codeModal.classList.add('visible'); ui.codeInput.value = ''; });
+      function closeModal() { ui.codeModal.classList.remove('visible'); }
+      ui.closeModalBtn.addEventListener('click', closeModal);
+      ui.codeModal.addEventListener('click', (e) => { if (e.target === ui.codeModal) closeModal(); });
+      ui.submitCodeBtn.addEventListener('click', redeemCounterCode);
+    });
+  </script>
+</body>
+</html>

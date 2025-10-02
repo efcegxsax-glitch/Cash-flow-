@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>حسابك الشخصي</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    :root {
+      --bg-gradient-start: #232526; --bg-gradient-end: #1a1a1c; --card-bg: #2c2d30;
+      --text-color: #ffffff; --text-secondary: #a0a0a0; --gold-accent: #fcd75c;
+      --blue-accent: #6a7bff; --green-accent: #4ade80; --red-accent: #ef4444;
+      --border-color: #44444a; --shadow-color: rgba(0, 0, 0, 0.25);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: "Cairo", sans-serif; background: var(--bg-gradient-end); color: var(--text-color);
+      min-height: 100vh; display: flex; justify-content: center; align-items: stretch;
+      -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+    }
+    .mobile-container {
+      width: 100%; height: 100%; background-color: var(--bg-gradient-end);
+      overflow-y: auto; display: flex; flex-direction: column;
+    }
+    .profile-section { text-align: center; padding: 35px 20px; flex-grow: 1; }
+    .profile-pic {
+      width: 120px; height: 120px; border-radius: 50%; object-fit: cover;
+      margin-bottom: 15px; border: 4px solid var(--border-color);
+      box-shadow: 0 5px 15px var(--shadow-color);
+    }
+    .user-name { font-size: 26px; font-weight: 800; margin-bottom: 10px; text-shadow: 0 2px 5px var(--shadow-color); }
+    .verification-badge {
+      background-color: var(--gold-accent); color: #232526; border: none; border-radius: 20px;
+      padding: 8px 18px; font-weight: 700; font-size: 14px; display: inline-flex;
+      align-items: center; gap: 8px; margin-bottom: 25px; cursor: pointer;
+    }
+    .profile-actions { display: flex; justify-content: center; gap: 20px; margin-bottom: 35px; }
+    .action-btn { display: flex; flex-direction: column; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 13px; font-weight: 600; cursor: pointer; }
+    .action-icon { width: 55px; height: 55px; border-radius: 50%; display: grid; place-items: center; font-size: 22px; color: white; }
+    .action-icon.gold { background-color: var(--gold-accent); } .action-icon.blue { background-color: var(--blue-accent); }
+    .info-list { display: flex; flex-direction: column; gap: 15px; }
+    .info-card {
+      background-color: var(--card-bg); border-radius: 20px; padding: 20px; display: flex;
+      align-items: center; justify-content: space-between; position: relative;
+      overflow: hidden; border: 1px solid var(--border-color);
+    }
+    .card-tab { position: absolute; left: 0; top: 0; bottom: 0; width: 8px; background: linear-gradient(180deg, var(--gold-accent), #d1a938); border-radius: 0 10px 10px 0; }
+    .card-content { flex-grow: 1; text-align: right; padding-right: 15px; }
+    .card-title { font-size: 14px; color: var(--text-secondary); font-weight: 500; margin-bottom: 4px; }
+    .card-value { font-size: 17px; font-weight: 700; display: flex; align-items: center; gap: 8px; justify-content: flex-end; line-height: 1.4; word-break: break-all; }
+    .card-icons { color: var(--text-secondary); font-size: 18px; cursor: pointer; transition: color 0.3s ease; }
+    .card-icons:hover { color: var(--blue-accent); }
+    .icon-verified { color: var(--green-accent) !important; font-size: 18px; }
+    .loader-container { display: grid; place-items: center; flex-grow: 1; }
+    .loader { width: 50px; height: 50px; border: 5px solid var(--border-color); border-radius: 50%; border-top-color: var(--blue-accent); animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 15px; }
+    .modal-content { background: var(--card-bg); padding: 25px; border-radius: 15px; width: 100%; max-width: 350px; text-align: center; border: 1px solid var(--border-color); }
+    .modal-content h3 { font-size: 20px; margin-bottom: 20px; }
+    .modal-input { width: 100%; padding: 12px; border-radius: 10px; border: 2px solid var(--border-color); background-color: #1a1a1c; color: white; font-family: 'Cairo', sans-serif; font-size: 16px; text-align: right; margin-bottom: 20px; }
+    .modal-actions { display: flex; gap: 10px; justify-content: center; }
+    .modal-btn { padding: 10px 20px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 15px; flex-grow: 1; }
+    .btn-save { background-color: var(--blue-accent); color: white; }
+    .btn-cancel { background-color: var(--border-color); color: white; }
+    .notification { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); padding: 12px 25px; border-radius: 10px; color: white; font-weight: 600; box-shadow: 0 4px 15px var(--shadow-color); z-index: 1001; opacity: 0; transition: opacity 0.3s ease, top 0.3s ease; text-align: center; }
+    .notification.show { top: 30px; opacity: 1; }
+    .notification.success { background-color: var(--green-accent); }
+    .notification.error { background-color: var(--red-accent); }
+  </style>
+</head>
+<body>
+  <div class="mobile-container">
+    <main class="profile-section" id="profile-section" style="display: none;">
+      <img src="https://via.placeholder.com/120" alt="صورة الملف الشخصي" class="profile-pic" id="profile-pic-img">
+      <h2 class="user-name" id="user-name">...</h2>
+      <button class="verification-badge"><i class="fas fa-check"></i> توثيق</button>
+      <div class="profile-actions">
+        <div class="action-btn" id="change-pic-btn">
+          <div class="action-icon gold"><i class="fas fa-camera-rotate"></i></div>
+          <span>تغيير الصورة</span>
+        </div>
+        <div class="action-btn">
+          <div class="action-icon blue"><i class="fas fa-users"></i></div>
+          <span>الفريق</span>
+        </div>
+      </div>
+      <div class="info-list">
+        <div class="info-card">
+          <div class="card-icons" id="edit-name-btn"><i class="fas fa-pencil-alt"></i></div>
+          <div class="card-content">
+            <div class="card-title">إسم المستخدم</div>
+            <div class="card-value" id="user-name-card">...</div>
+          </div>
+        </div>
+        <div class="info-card">
+          <div class="card-content">
+            <div class="card-title">رمز الاحالة</div>
+            <div class="card-value" id="referral-code">...</div>
+          </div>
+          <div class="card-tab"></div>
+        </div>
+        <div class="info-card">
+          <div class="card-icons"><i class="fas fa-pencil-alt"></i></div>
+          <div class="card-content">
+            <div class="card-title">رقم الهاتف</div>
+            <div class="card-value">
+              <span>-</span>
+            </div>
+          </div>
+        </div>
+        <div class="info-card">
+           <div class="card-content">
+             <div class="card-title">بريد إلكتروني موثق</div>
+             <div class="card-value">
+               <i class="fas fa-check-circle icon-verified"></i>
+               <span id="user-email">...</span>
+             </div>
+           </div>
+        </div>
+        <div class="info-card">
+           <div class="card-icons"><i class="fas fa-pencil-alt"></i></div>
+           <div class="card-content">
+             <div class="card-title">حساب الفيسبوك</div>
+             <div class="card-value">
+               <span>-</span>
+             </div>
+           </div>
+        </div>
+      </div>
+    </main>
+    <div class="loader-container" id="loader"><div class="loader"></div></div>
+  </div>
+  <input type="file" id="profile-pic-input" hidden accept="image/*">
+  <div class="modal-overlay" id="name-modal"> <div class="modal-content"> <h3>تغيير اسم المستخدم</h3> <input type="text" id="new-name-input" class="modal-input" placeholder="أدخل الاسم الجديد"> <div class="modal-actions"> <button class="modal-btn btn-cancel" id="cancel-name-change">إلغاء</button> <button class="modal-btn btn-save" id="save-name-change">حفظ التغيير</button> </div> </div> </div>
+  <div id="notification" class="notification"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getDatabase, ref as dbRef, get, update } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDHVwsR3xlJdQz189v-LYtCGGGGbg9h4bU",
+      authDomain: "information-5dffc.firebaseapp.com",
+      databaseURL: "https://information-5dffc-default-rtdb.firebaseio.com",
+      projectId: "information-5dffc",
+      storageBucket: "information-5dffc.appspot.com",
+      messagingSenderId: "622479615827",
+      appId: "1:622479615827:web:51c9ce29f8e26fbce1a3a6"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    const loader = document.getElementById('loader');
+    const profileSection = document.getElementById('profile-section');
+    const notification = document.getElementById('notification');
+    const profilePicElem = document.getElementById('profile-pic-img');
+    const userNameElem = document.getElementById('user-name');
+    const userNameCardElem = document.getElementById('user-name-card');
+    const userEmailElem = document.getElementById('user-email');
+    const referralCodeElem = document.getElementById('referral-code');
+    const changePicBtn = document.getElementById('change-pic-btn');
+    const profilePicInput = document.getElementById('profile-pic-input');
+    const editNameBtn = document.getElementById('edit-name-btn');
+    const nameModal = document.getElementById('name-modal');
+    const newNameInput = document.getElementById('new-name-input');
+    const saveNameChangeBtn = document.getElementById('save-name-change');
+    const cancelNameChangeBtn = document.getElementById('cancel-name-change');
+
+    let currentUserData = null;
+
+    function showNotification(message, type) {
+        notification.textContent = message;
+        notification.className = `notification ${type} show`;
+        setTimeout(() => notification.classList.remove('show'), 3000);
+    }
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        const userRef = dbRef(db, 'users/' + user.uid);
+        get(userRef).then((snapshot) => {
+          if (snapshot.exists()) {
+            currentUserData = snapshot.val();
+            profilePicElem.src = currentUserData.profilePicture || 'https://via.placeholder.com/120';
+            userNameElem.textContent = currentUserData.name;
+            userNameCardElem.textContent = currentUserData.name;
+            userEmailElem.textContent = user.email;
+            referralCodeElem.textContent = currentUserData.referralCode;
+            loader.style.display = 'none';
+            profileSection.style.display = 'block';
+          } else {
+             loader.innerHTML = 'خطأ: لم يتم العثور على بيانات الملف الشخصي.';
+          }
+        }).catch(error => {
+            console.error("Error fetching user data:", error);
+            loader.innerHTML = 'حدث خطأ في جلب البيانات.';
+        });
+      } else {
+        loader.innerHTML = '<h2>الرجاء تسجيل الدخول أولاً.</h2>';
+      }
+    });
+
+    // --- Logic for Changing Name ---
+    editNameBtn.addEventListener('click', () => {
+        if (!currentUserData) return;
+        const lastChanged = currentUserData.nameLastChanged ? new Date(currentUserData.nameLastChanged) : null;
+        if (lastChanged) {
+            const sevenDays = 7 * 24 * 60 * 60 * 1000;
+            const timeSinceChange = new Date() - lastChanged;
+            if (timeSinceChange < sevenDays) {
+                const daysLeft = Math.ceil((sevenDays - timeSinceChange) / (1000 * 60 * 60 * 24));
+                showNotification(`لا يمكنك تغيير اسمك الآن. يرجى الانتظار ${daysLeft} يوم.`, 'error');
+                return;
+            }
+        }
+        newNameInput.value = currentUserData.name;
+        nameModal.style.display = 'flex';
+    });
+    cancelNameChangeBtn.addEventListener('click', () => nameModal.style.display = 'none');
+    saveNameChangeBtn.addEventListener('click', async () => {
+        const newName = newNameInput.value.trim();
+        if (!newName || newName.length < 3) {
+            showNotification('الاسم يجب أن يكون 3 أحرف على الأقل.', 'error');
+            return;
+        }
+        if (newName === currentUserData.name) {
+            nameModal.style.display = 'none';
+            return;
+        }
+        saveNameChangeBtn.disabled = true;
+        saveNameChangeBtn.textContent = 'جاري الحفظ...';
+        try {
+            const user = auth.currentUser;
+            await updateProfile(user, { displayName: newName });
+            await update(dbRef(db, 'users/' + user.uid), {
+                name: newName,
+                nameLastChanged: new Date().toISOString()
+            });
+            currentUserData.name = newName;
+            currentUserData.nameLastChanged = new Date().toISOString();
+            userNameElem.textContent = newName;
+            userNameCardElem.textContent = newName;
+            showNotification('تم تحديث الاسم بنجاح!', 'success');
+        } catch (error) {
+            console.error("Error updating name:", error);
+            showNotification('حدث خطأ أثناء تحديث الاسم.', 'error');
+        } finally {
+            saveNameChangeBtn.disabled = false;
+            saveNameChangeBtn.textContent = 'حفظ التغيير';
+            nameModal.style.display = 'none';
+        }
+    });
+
+    // --- Logic for Changing Profile Picture (Using Base64) ---
+    changePicBtn.addEventListener('click', () => profilePicInput.click());
+    profilePicInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            showNotification('الرجاء اختيار ملف صورة فقط.', 'error');
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+
+        reader.onload = async () => {
+            const base64Data = reader.result;
+            showNotification('جاري تحديث الصورة...', 'success');
+            profilePicElem.style.opacity = '0.5';
+            
+            try {
+                const user = auth.currentUser;
+                if (!user) throw new Error("User not authenticated.");
+                await update(dbRef(db, 'users/' + user.uid), { profilePicture: base64Data });
+                currentUserData.profilePicture = base64Data;
+                profilePicElem.src = base64Data;
+                showNotification('تم تحديث الصورة بنجاح!', 'success');
+            } catch (error) {
+                console.error("Error saving Base64 profile picture:", error);
+                showNotification('فشل تحديث الصورة.', 'error');
+            } finally {
+                profilePicElem.style.opacity = '1';
+                profilePicInput.value = '';
+            }
+        };
+        reader.onerror = () => showNotification('فشل قراءة الملف.', 'error');
+    });
+  </script>
+</body>
+</html>

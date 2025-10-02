@@ -1,0 +1,2088 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>غرف الدردشة</title>
+  
+  <script>
+    // Error handler is kept for safety
+    window.onerror = function(message, source, lineno, colno, error) {
+      alert(
+        'حدث خطأ في الصفحة!\n\n' +
+        'الرسالة: ' + message + '\n' +
+        'في السطر رقم: ' + lineno
+      );
+    };
+    window.addEventListener('unhandledrejection', function(event) {
+      alert(
+        'حدث خطأ غير متوقع (Promise)!\n\n' +
+        'السبب: ' + event.reason
+      );
+    });
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    :root {
+      --bg-color: #121212;
+      --nav-bg: #1e1e1e;
+      --card-bg: #2a2a2a;
+      --btn-inactive: #333333;
+      --btn-active: #f39c12;
+      --text-color: #ffffff;
+      --text-secondary: #aaaaaa;
+      --gold-accent: #f1c40f;
+      --mic-empty-bg: rgba(255, 255, 255, 0.05);
+      --mic-border: rgba(255, 255, 255, 0.1);
+      --dark-texture-bg: #212121;
+      --edit-btn-color: #3498db;
+      --heart-color: rgba(255, 255, 255, 0.5);
+      --heart-joined-color: #e74c3c;
+      --speaking-glow-color: #2ecc71;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: "Cairo", sans-serif; background-color: var(--bg-color); color: var(--text-color); }
+    #app-container { width: 100%; max-width: 480px; margin: 0 auto; background-color: #000; display: block; }
+    .main-nav-bar { background-color: var(--nav-bg); padding: 10px; display: flex; justify-content: center; align-items: center; border-bottom: 1px solid #444; }
+    
+    .nav-buttons-container { 
+      display: flex; 
+      gap: 8px; 
+      align-items: center; 
+      width: 100%;
+      overflow-x: auto;
+      flex-wrap: nowrap;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    .nav-buttons-container::-webkit-scrollbar {
+        display: none;
+    }
+
+    .nav-button { font-family: "Cairo", sans-serif; font-weight: 600; padding: 10px 18px; border-radius: 25px; border: 1px solid #555; cursor: pointer; white-space: nowrap; transition: all 0.3s ease; font-size: 15px; background-color: var(--btn-inactive); color: var(--text-secondary); }
+    .nav-button.active { background-color: var(--btn-active); color: var(--text-color); border-color: var(--btn-active); font-weight: 700; }
+    .nav-search-btn { margin-left: auto; }
+    .rooms-container { padding: 15px; }
+    .rooms-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    .room-card { position: relative; border-radius: 15px; overflow: hidden; cursor: pointer; aspect-ratio: 1 / 1.2; display: flex; flex-direction: column; justify-content: flex-end; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4); transition: transform 0.3s ease; }
+    .room-card:hover { transform: scale(1.03); }
+    .room-card-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+    .room-card-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to top, rgba(0,0,0,0.9) 20%, rgba(0,0,0,0.1) 60%); z-index: 2; }
+    .room-card-content { position: relative; z-index: 3; padding: 10px; text-shadow: 1px 1px 3px rgba(0,0,0,0.7); }
+    .room-name { font-size: 16px; font-weight: 700; }
+    .room-members-count { position: absolute; top: 10px; left: 10px; z-index: 3; background-color: rgba(0,0,0,0.6); border-radius: 20px; padding: 4px 10px; font-size: 13px; display: flex; align-items: center; gap: 5px; }
+    .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); display: none; justify-content: center; align-items: center; z-index: 1000; }
+    .modal-content { background: var(--card-bg); padding: 25px; border-radius: 15px; width: 90%; max-width: 350px; text-align: center; }
+    .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; }
+    .modal-input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #555; background: #444; color: white; font-family: "Cairo", sans-serif; font-size: 16px; margin-bottom: 15px; }
+    .modal-input:disabled { background-color: #333; cursor: not-allowed; }
+    .image-preview-container { width: 100px; height: 100px; border: 2px dashed var(--btn-inactive); border-radius: 10px; margin: 0 auto 15px; display: flex; justify-content: center; align-items: center; cursor: pointer; overflow: hidden; background-size: cover; background-position: center; }
+    .image-preview-container img { width: 100%; height: 100%; object-fit: cover; }
+    .image-preview-container span { color: var(--text-secondary); }
+    .image-input { display: none; }
+    .modal-actions { display: flex; flex-direction: column; gap: 10px; }
+    .modal-button { width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; }
+    .confirm-btn { background-color: var(--btn-active); color: white; }
+    .cancel-btn { background-color: var(--btn-inactive); color: var(--text-secondary); }
+    #chat-container { display: none; flex-direction: column; height: 100vh; max-width: 480px; margin: 0 auto; background-color: var(--dark-texture-bg); background-image: url('https://www.transparenttextures.com/patterns/dark-denim-3.png'); position: relative; background-size: cover; background-position: center; overflow: hidden; }
+    .chat-header { padding: 10px 15px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; background-color: rgba(0,0,0,0.4); }
+    .header-left-icons { display: flex; align-items: center; gap: 12px; }
+    .header-icon { font-size: 24px; cursor: pointer; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); }
+    .header-icon.exit { color: #e74c3c; } .header-icon.shield { color: #2ecc71; } .header-icon.coin { color: #f1c40f; }
+    .header-icon.edit { color: var(--edit-btn-color); }
+    .header-icon.heart { color: var(--heart-color); transition: color 0.3s ease; }
+    .header-icon.heart.joined { color: var(--heart-joined-color); }
+    .header-right-info { display: flex; align-items: center; gap: 10px; }
+    .owner-details { display: flex; flex-direction: column; align-items: flex-end; }
+    .owner-name { font-size: 16px; font-weight: 700; text-shadow: 1px 1px 3px rgba(0,0,0,0.7); }
+    .owner-id { font-size: 12px; color: var(--text-secondary); }
+    .owner-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold-accent); }
+    #voice-chat-ui { padding: 20px 15px; flex-shrink: 0; }
+    .mic-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+    .mic-slot { position: relative; aspect-ratio: 1 / 1; background-color: rgba(0, 0, 0, 0.3); border: 1px solid var(--mic-border); border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.3s; }
+    .mic-number { position: absolute; top: 5px; right: 10px; font-size: 14px; font-weight: bold; color: var(--text-secondary); }
+    .mic-icon { font-size: 28px; color: #555; }
+    .mic-slot.occupied { border: 2px solid var(--gold-accent); padding: 4px; background-color: transparent; }
+    .user-avatar { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+    .messages-container { flex-grow: 1; padding: 15px 15px 80px 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+    .message { display: flex; max-width: 85%; gap: 10px; align-items: flex-end; }
+    .message-avatar { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; object-fit: cover; cursor: pointer; }
+    .message-content { display: flex; flex-direction: column; }
+    .message-sender-name { font-size: 13px; font-weight: 600; color: var(--gold-accent); margin-bottom: 2px; }
+    .message-text { 
+        padding: 8px 12px; 
+        border-radius: 15px; 
+        word-wrap: break-word; 
+        font-size: 15px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+        position: relative;
+    }
+    .received { align-self: flex-start; }
+    .received .message-sender-name { text-align: right; }
+    .received .message-text { 
+        background-color: #3a3b3c;
+        color: white; 
+    }
+    .sent { align-self: flex-end; flex-direction: row-reverse; }
+    .sent .message-sender-name { text-align: left; }
+    .sent .message-text { 
+        background-color: #2b5278;
+        color: white;
+    }
+    .message-text::after {
+        content: '';
+        position: absolute;
+        top: 10px;
+        width: 0;
+        height: 0;
+        border: 8px solid transparent;
+    }
+    .sent .message-text::after {
+        left: 0;
+        border-right-color: #2b5278;
+        border-left: 0;
+        margin-left: -7px;
+    }
+    .received .message-text::after {
+        right: 0;
+        border-left-color: #3a3b3c;
+        border-right: 0;
+        margin-right: -7px;
+    }
+    .side-toolbar { position: absolute; bottom: 80px; left: 10px; display: flex; flex-direction: column; gap: 15px; z-index: 10; }
+    .tool-btn { background-color: rgba(44, 44, 44, 0.8); border: 1px solid #444; color: var(--text-secondary); font-size: 20px; cursor: pointer; width: 45px; height: 45px; border-radius: 50%; display: flex; justify-content: center; align-items: center; transition: background-color 0.3s; }
+    .tool-btn:hover { background-color: #333; }
+    .input-container { position: absolute; bottom: 0; left: 0; right: 0; display: flex; align-items: center; padding: 10px 15px; gap: 10px; background-color: #2a2a2a; flex-shrink: 0; z-index: 10; }
+    .input-actions { display: flex; align-items: center; gap: 10px; }
+    .input-icon-btn { background: none; border: none; font-size: 24px; color: var(--text-secondary); cursor: pointer; }
+    .message-input { flex: 1; border-radius: 20px; border: 1px solid #555; padding: 10px 15px; background: #444; color: white; font-size: 15px; }
+    #profile-modal-img { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; margin: 0 auto 15px; border: 3px solid var(--gold-accent); }
+    #profile-modal-name { font-size: 22px; font-weight: 700; }
+    #profile-modal-id { font-size: 14px; color: var(--text-secondary); background: #333; padding: 4px 10px; border-radius: 15px; display: inline-block; margin-top: 5px; margin-bottom: 20px; }
+    #profile-modal-admin-controls { text-align: right; border-top: 1px solid #444; padding-top: 15px; }
+    .permission-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .permission-row label { font-size: 16px; }
+    .permission-row input[type="checkbox"] { width: 20px; height: 20px; }
+    #profile-modal-admin-controls h4 { margin-bottom: 10px; text-align: center; }
+    .kick-btn { background-color: #c0392b !important; color: white !important; }
+    .mic-status-icons {
+        position: absolute;
+        bottom: 2px;
+        left: 2px;
+        display: flex;
+        gap: 2px;
+        background-color: rgba(0,0,0,0.5);
+        border-radius: 10px;
+        padding: 2px 4px;
+        font-size: 12px;
+    }
+    .status-icon { color: white; }
+    .status-icon.fa-lock { color: var(--gold-accent); }
+    .status-icon.fa-microphone-slash { color: var(--heart-joined-color); }
+    @keyframes speaking-glow {
+        0% { box-shadow: 0 0 5px var(--speaking-glow-color), 0 0 10px var(--speaking-glow-color); }
+        50% { box-shadow: 0 0 15px var(--speaking-glow-color), 0 0 25px var(--speaking-glow-color); }
+        100% { box-shadow: 0 0 5px var(--speaking-glow-color), 0 0 10px var(--speaking-glow-color); }
+    }
+    .user-avatar.speaking {
+        animation: speaking-glow 1.5s infinite ease-in-out;
+    }
+    #gift-drawer-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        z-index: 1001;
+        display: none;
+    }
+    #gift-drawer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        max-width: 480px;
+        margin: 0 auto;
+        background-color: #21031c;
+        border-top-left-radius: 20px;
+        border-top-right-radius: 20px;
+        z-index: 1002;
+        padding: 15px;
+        transform: translateY(100%);
+        transition: transform 0.3s ease-out;
+    }
+    #gift-drawer.open {
+        transform: translateY(0);
+    }
+    .gift-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    .diamond-balance {
+        background-color: rgba(0,0,0,0.3);
+        border-radius: 20px;
+        padding: 5px 12px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .diamond-balance i { color: #3498db; }
+    .gift-tabs {
+        display: flex;
+        background-color: rgba(0,0,0,0.3);
+        border-radius: 20px;
+        padding: 4px;
+    }
+    .gift-tabs button {
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-family: "Cairo", sans-serif;
+        font-size: 14px;
+        cursor: pointer;
+        transition: background-color 0.3s, color 0.3s;
+    }
+    .gift-tabs button.active {
+        background-color: #8e44ad;
+        color: white;
+    }
+    .gift-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+        margin-bottom: 15px;
+        min-height: 150px;
+    }
+    .gift-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: pointer;
+        border: 2px solid transparent;
+        border-radius: 10px;
+        padding: 5px;
+        transition: border-color 0.2s;
+    }
+    .gift-item.selected {
+        border-color: var(--btn-active);
+        background-color: rgba(243, 156, 18, 0.1);
+    }
+    .gift-item img {
+        width: 50px;
+        height: 50px;
+        object-fit: contain;
+    }
+    .gift-name {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 4px;
+        white-space: nowrap;
+    }
+    .gift-price {
+        font-size: 13px;
+        font-weight: 600;
+        margin-top: 5px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .gift-price i { color: #3498db; font-size: 12px;}
+    .gift-footer {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    #gift-quantity {
+        width: 60px;
+        background-color: #333;
+        border: 1px solid #555;
+        border-radius: 25px;
+        color: white;
+        text-align: center;
+        font-size: 16px;
+    }
+    #send-gift-btn {
+        flex: 1;
+        background-image: linear-gradient(to right, #c0392b, #8e44ad);
+        color: white;
+        border: none;
+        border-radius: 25px;
+        font-family: "Cairo", sans-serif;
+        font-size: 16px;
+        font-weight: 700;
+        cursor: pointer;
+        padding: 10px;
+    }
+    #ban-modal-username { color: var(--gold-accent); }
+    
+    .global-announcement-banner {
+        position: fixed;
+        top: -100px; 
+        left: 50%;
+        transform: translateX(-50%);
+        width: 95%;
+        max-width: 460px;
+        background-image: linear-gradient(to right, #8e44ad, #f39c12);
+        color: white;
+        padding: 12px;
+        border-radius: 0 0 15px 15px;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        transition: top 0.5s ease-in-out;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+    }
+    .global-announcement-banner.show {
+        top: 10px; 
+    }
+    
+    #gift-animation-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: none; 
+        justify-content: center;
+        align-items: center;
+        z-index: 100;
+        pointer-events: none;
+        background-color: rgba(0, 0, 0, 0.3);
+    }
+    #gift-animation-video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        mask-image: radial-gradient(ellipse at center, black 50%, transparent 100%);
+        -webkit-mask-image: radial-gradient(ellipse at center, black 50%, transparent 100%);
+    }
+  </style>
+</head>
+<body>
+  
+  <div id="global-announcement-banner" class="global-announcement-banner">
+      <i class="fas fa-bullhorn"></i>
+      <p id="global-announcement-text"></p>
+  </div>
+
+  <div id="remote-audio-container"></div>
+
+  <div id="app-container">
+    <div class="main-nav-bar">
+        <div class="nav-buttons-container">
+            <button class="nav-button">الأصدقاء</button>
+            <button class="nav-button" id="joined-rooms-btn">المنظم لها</button>
+            <button class="nav-button" id="create-room-btn">إنشاء غرفة</button>
+            <button class="nav-button active" id="all-rooms-btn">الغرف</button>
+            <button class="nav-button nav-search-btn"><i class="fas fa-search"></i></button>
+        </div>
+    </div>
+    <div class="rooms-container"><div class="rooms-grid" id="rooms-grid"></div></div>
+  </div>
+  
+  <div class="modal" id="create-room-modal">
+    <div class="modal-content">
+        <div class="modal-title">إنشاء غرفة جديدة</div>
+        <input type="text" class="modal-input" id="room-name-input" placeholder="اكتب اسم الغرفة..." maxlength="30">
+        <input type="file" id="room-image-input" class="image-input" accept="image/*">
+        <label for="room-image-input" class="image-preview-container" id="image-preview-container">
+            <span id="image-preview-text">اختر صورة للغرفة</span>
+            <img id="image-preview" src="" alt="Room preview" style="display: none;">
+        </label>
+        <p style="color: var(--gold-accent); margin-bottom: 15px; font-weight: 600; font-size: 16px;">
+            التكلفة: 300,000 <i class="fas fa-gem" style="font-size: 14px; margin-right: 2px;"></i>
+        </p>
+        <div class="modal-actions">
+            <div style="display:flex; width:100%; gap:10px;">
+                <button class="modal-button cancel-btn" id="cancel-create-btn">إلغاء</button>
+                <button class="modal-button confirm-btn" id="confirm-create-btn">إنشاء</button>
+            </div>
+        </div>
+    </div>
+  </div>
+
+  <div class="modal" id="edit-room-modal"><div class="modal-content"><div class="modal-title">تعديل معلومات الغرفة</div><input type="text" class="modal-input" id="edit-room-name-input" placeholder="اكتب اسم الغرفة الجديد..." maxlength="30"><input type="text" class="modal-input" id="edit-room-password-input" placeholder="اكتب رمز للغرفة (اختياري)" style="display: none;"><input type="file" id="edit-room-image-input" class="image-input" accept="image/*"><label for="edit-room-image-input" class="image-preview-container" id="edit-image-preview-container"><span id="edit-image-preview-text">اختر صورة جديدة (اختياري)</span><img id="edit-image-preview" src="" alt="Room preview" style="display: none;"></label><div class="modal-actions"><div style="display:flex; width:100%; gap:10px;"><button class="modal-button cancel-btn" id="cancel-edit-btn">إلغاء</button><button class="modal-button confirm-btn" id="confirm-edit-btn">حفظ التغييرات</button></div></div></div></div>
+  <div class="modal" id="user-profile-modal"><div class="modal-content"><img id="profile-modal-img" src="" alt="User Avatar"><h3 id="profile-modal-name">اسم المستخدم</h3><p id="profile-modal-id">ID: 00000</p><div id="profile-modal-admin-controls" style="display: none;"><h4>صلاحيات الأدمن</h4><div class="permission-row"><label for="perm-super-admin">سوبر أدمن (كل الصلاحيات)</label><input type="checkbox" id="perm-super-admin"></div><hr style="border-color: #444; margin: 10px 0;"><div class="permission-row"><label for="perm-edit-room">تعديل الغرفة</label><input type="checkbox" id="perm-edit-room"></div><div class="permission-row"><label for="perm-kick-users">طرد المستخدمين</label><input type="checkbox" id="perm-kick-users"></div><div class="permission-row"><label for="perm-manage-mics">التحكم بالمايكات</label><input type="checkbox" id="perm-manage-mics"></div></div><div class="modal-actions"><div style="display:flex; width:100%; gap:10px;"><button class="modal-button cancel-btn" id="profile-modal-close-btn">إغلاق</button></div><div style="display:flex; width:100%; gap:10px; margin-top: 10px;"><button class="modal-button confirm-btn" id="profile-modal-save-btn" style="display: none;">حفظ الصلاحيات</button><button class="modal-button kick-btn" id="profile-modal-ban-btn" style="display: none;">طرد من الغرفة</button></div></div></div></div>
+
+  <div class="modal" id="mic-control-modal">
+    <div class="modal-content">
+        <h3 id="mic-modal-title" class="modal-title">التحكم بالمايك</h3>
+        <div class="modal-actions" id="mic-modal-buttons">
+            <button id="mic-modal-take" class="modal-button confirm-btn" style="display: none;">أخذ المايك</button>
+            <button id="mic-modal-leave" class="modal-button" style="display: none;">ترك المايك</button>
+            <button id="mic-modal-toggle-mute" class="modal-button" style="display: none;">كتم / إلغاء كتم الصوت</button>
+            <button id="mic-modal-kick" class="modal-button kick-btn" style="display: none;">إنزال المستخدم من المايك</button>
+            <button id="mic-modal-admin-mute" class="modal-button" style="display: none;">كتم صوت المستخدم</button>
+            <button id="mic-modal-admin-unmute" class="modal-button" style="display: none;">إلغاء كتم المستخدم</button>
+            <button id="mic-modal-lock" class="modal-button" style="display: none;">قفل المايك</button>
+            <button id="mic-modal-unlock" class="modal-button" style="display: none;">فتح المايك</button>
+        </div>
+        <div class="modal-actions">
+            <button class="modal-button cancel-btn" id="mic-modal-cancel-btn">إلغاء</button>
+        </div>
+    </div>
+  </div>
+
+  <div class="modal" id="ban-options-modal">
+    <div class="modal-content">
+        <h3 class="modal-title">خيارات الحظر لـ <span id="ban-modal-username"></span></h3>
+        <div class="modal-actions">
+            <button class="modal-button" data-duration="3600000">حظر لمدة ساعة</button>
+            <button class="modal-button" data-duration="86400000">حظر لمدة يوم</button>
+            <button class="modal-button kick-btn" data-duration="permanent">حظر دائم</button>
+        </div>
+         <div class="modal-actions" style="margin-top:10px;">
+            <button class="modal-button cancel-btn" id="ban-modal-cancel-btn">إلغاء</button>
+        </div>
+    </div>
+  </div>
+
+  <div id="chat-container">
+    <div class="chat-header">
+        <div class="header-left-icons">
+            <i id="exit-room-btn" class="fas fa-power-off header-icon exit"></i>
+            <i class="fas fa-shield-alt header-icon shield"></i>
+            <i class="fas fa-coins header-icon coin"></i>
+            <i id="edit-room-btn" class="fas fa-cog header-icon edit" style="display: none;"></i>
+            <i id="join-room-btn" class="fas fa-heart header-icon heart"></i>
+        </div>
+        <div class="header-right-info" id="owner-info-container"></div>
+    </div>
+    <div id="voice-chat-ui">
+        <div class="mic-grid" id="mic-grid"></div>
+    </div>
+    <div class="messages-container" id="messages-container"></div>
+    <div class="side-toolbar">
+        <button class="tool-btn"><i class="fas fa-envelope"></i></button>
+        <button class="tool-btn"><i class="fas fa-bullhorn"></i></button>
+        <button class="tool-btn"><i class="fas fa-record-vinyl"></i></button>
+        <button class="tool-btn" id="open-gift-drawer-btn"><i class="fas fa-gift"></i></button>
+    </div>
+    <div class="input-container">
+        <div class="input-actions">
+            <button class="input-icon-btn" id="send-btn"><i class="fas fa-paper-plane"></i></button>
+            <button class="input-icon-btn"><i class="fas fa-sticky-note"></i></button>
+        </div>
+        <input type="text" id="message-input" class="message-input" placeholder="اكتب شي...">
+    </div>
+    
+    <div id="gift-animation-overlay">
+        <video id="gift-animation-video" playsinline></video>
+    </div>
+
+  </div>
+
+  <div id="gift-drawer-overlay"></div>
+  <div id="gift-drawer">
+      <div class="gift-header">
+          <div class="diamond-balance">
+              <span id="user-diamond-balance">0</span>
+              <i class="fas fa-gem"></i>
+          </div>
+          <div class="gift-tabs">
+              <button class="active" data-category="simple">هدايا بسيطة</button>
+              <button data-category="medium">هدايا متوسطة</button>
+              <button data-category="valuable">هدايا قيمة</button>
+          </div>
+      </div>
+      <div class="gift-grid" id="gift-grid-container">
+      </div>
+      <div class="gift-footer">
+          <button id="send-gift-btn">إرسال إلى الجميع</button>
+          <input type="number" id="gift-quantity" value="1" min="1">
+          <div style="color: #666; font-size: 24px; letter-spacing: 5px;">- - -</div>
+      </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+    import { getDatabase, ref, push, onValue, off, set, serverTimestamp, get, update, onDisconnect, remove, onChildAdded, increment, query, orderByChild, startAt } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
+    
+    const gifts = {
+        simple: [
+            { id: 'tea', name: 'كوب شاي', price: 90, img: 'https://i.ibb.co/688p9bB/tea.png' },
+            { id: 'penguin', name: 'بطريق', price: 90, img: 'https://i.ibb.co/qj5dYgW/penguin.png' },
+            { id: 'cow', name: 'بقرة', price: 90, img: 'https://i.ibb.co/P9Mym5k/cow.png' },
+            { id: 'icecream', name: 'آيس كريم', price: 99, img: 'https://i.ibb.co/hZJ4c7G/icecream.png' },
+            { id: 'knife', name: 'خنجر', price: 150, img: 'https://i.ibb.co/z6nQ3r2/knife.png' },
+            { id: 'lizard', name: 'سحلية', price: 90, img: 'https://i.ibb.co/zXgN1V9/lizard.png' },
+            { id: 'egg', name: 'بيضة', price: 90, img: 'https://i.ibb.co/VvzbnJg/egg.png' },
+            { id: 'pepper', name: 'فلفل حار', price: 99, img: 'https://i.ibb.co/TcFkS8s/pepper.png' }
+        ],
+        medium: [
+            { id: 'heart', name: 'قلب', price: 100, img: 'https://i.ibb.co/L5w2X1j/heart.png' },
+            { id: 'rose', name: 'وردة حمراء', price: 111, img: 'https://i.ibb.co/Y0fBwD5/rose.png' },
+            { id: 'cake', name: 'كيكة', price: 444, img: 'https://i.ibb.co/mG04N2N/cake.png' },
+            { id: 'lollipop', name: 'مصاصة', price: 500, img: 'https://i.ibb.co/VMywhz8/lollipop.png' },
+            { id: 'ring', name: 'خاتم', price: 600, img: 'https://i.ibb.co/wJv3gBq/ring.png' },
+            { id: 'perfume', name: 'عطر', price: 750, img: 'https://i.ibb.co/B2v3HcF/perfume.png' },
+            { id: 'teddy', name: 'دبدوب', price: 800, img: 'https://i.ibb.co/dK5k3nC/teddy.png' },
+            { id: 'guitar', name: 'غيتار', price: 900, img: 'https://i.ibb.co/HhN9G0N/guitar.png' },
+            { id: 'crown', name: 'تاج صغير', price: 1000, img: 'https://i.ibb.co/yqFv3Vz/crown.png' },
+            { id: 'necklace', name: 'قلادة', price: 1500, img: 'https://i.ibb.co/P9gL0wM/necklace.png' },
+            { id: 'car', name: 'سيارة كلاسيك', price: 2500, img: 'https://i.ibb.co/L9YmYV7/car.png' },
+            { id: 'diamond', name: 'ماسة', price: 3000, img: 'https://i.ibb.co/Wc4M4d3/diamond.png' },
+            { id: 'ship', name: 'سفينة', price: 5000, img: 'https://i.ibb.co/Jqj2YtH/ship.png' },
+            { id: 'castle', name: 'قلعة صغيرة', price: 5300, img: 'https://i.ibb.co/SmdT3Gz/castle.png' }
+        ],
+        valuable: [
+            { id: 'motorcycle', name: 'دراجة نارية', price: 5000, img: 'https://i.ibb.co/hL4b1x9/motorcycle.png', video: 'motorcycle.mp4' },
+            { id: 'jetski', name: 'جيت سكي', price: 7000, img: 'https://i.ibb.co/gDFtHxz/jetski.png', video: 'jetski.mp4' },
+            { id: 'treasure', name: 'صندوق الكنز', price: 7777, img: 'https://i.ibb.co/ZTHJ6J2/treasure.png', video: 'treasure.mp4' },
+            { id: 'helicopter', name: 'تشارجر', price: 8000, img: 'https://i.ibb.co/xGLgD6Y/helicopter.png', video: 'helicopter.mp4' },
+            { id: 'sportscar', name: 'سيارة سباق', price: 9000, img: 'https://i.ibb.co/2Z5zVts/sportscar.png', video: 'sportscar.mp4' },
+            { id: 'jet', name: 'طائرة خاصة', price: 10000, img: 'https://i.ibb.co/PNHF7Vd/jet.png', video: 'jet.mp4' },
+            { id: 'yacht', name: 'يخت فاخر', price: 12000, img: 'https://i.ibb.co/LdJcBGn/yacht.png', video: 'yacht.mp4' },
+            { id: 'lion', name: 'الأسد الملك', price: 15000, img: 'https://i.ibb.co/1nQzRck/lion.png', video: 'lion.mp4' },
+            { id: 'villa', name: 'قصر الأحلام', price: 90000, img: 'https://i.ibb.co/23k3Wd2/villa.png', video: 'villa.mp4' },
+            { id: 'universe', name: 'مجرة الحب', price: 9000000, img: 'https://i.ibb.co/k5cWq3F/universe.png', video: 'universe.mp4' }
+        ]
+    };
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDHVwsR3xlJdQz189v-LYtCGGGGbg9h4bU",
+      authDomain: "information-5dffc.firebaseapp.com",
+      databaseURL: "https://information-5dffc-default-rtdb.firebaseio.com",
+      projectId: "information-5dffc",
+      storageBucket: "information-5dffc.appspot.com",
+      messagingSenderId: "622479615827",
+      appId: "1:622479615827:web:51c9ce29f8e26fbce1a3a6",
+      measurementId: "G-XDHPYRCKWN"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    class ChatManager {
+      constructor(db, user) {
+        this.db = db;
+        this.currentUser = user;
+        this.roomsRef = ref(db, 'rooms');
+        this.usersRef = ref(db, 'users');
+        this.globalAnnouncementsRef = ref(db, 'globalAnnouncements');
+        this.currentRoomId = null;
+        this.listeners = {};
+        this.userCache = {};
+        this.currentRoomData = {};
+        this.localStream = null;
+        this.audioContext = null;
+        this.analyser = null;
+        this.animationFrameId = null;
+        this.peerConnections = {};
+        this.iceServers = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        };
+        this.iceCandidateBuffer = {};
+        this.selectedGift = null;
+        this.selectedRecipient = 'all';
+        this.animationQueue = [];
+        this.isAnimating = false;
+        
+        this.allRoomsData = {}; 
+        this.joinedRoomsIds = new Set();
+        this.currentFilter = 'all';
+      }
+      
+      async createRoom(roomName, imageFile) {
+        const trimmedName = roomName.trim();
+        if (!trimmedName) { alert("الرجاء إدخال اسم للغرفة."); return null; }
+        if (!imageFile) { alert("الرجاء اختيار صورة للغرفة."); return null; }
+
+        const userRef = ref(this.db, `users/${this.currentUser.uid}`);
+        const userSnapshot = await get(userRef);
+        const userDiamonds = (userSnapshot.val() && userSnapshot.val().diamonds) || 0;
+        
+        const ROOM_CREATION_COST = 300000;
+        if (userDiamonds < ROOM_CREATION_COST) {
+            alert(`تحتاج إلى ${ROOM_CREATION_COST.toLocaleString()} جوهرة على الأقل لإنشاء غرفة.`);
+            return null;
+        }
+
+        const getBase64 = (file) => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = (error) => reject(error);
+        });
+
+        try {
+            const imageBase64 = await getBase64(imageFile);
+            const newCustomId = Math.floor(10000 + Math.random() * 90000);
+
+            const initialMicSlots = { mic1: null, mic2: null, mic3: null, mic4: null };
+            const initialMicLocks = { mic1: false, mic2: false, mic3: false, mic4: false };
+            
+            await push(this.roomsRef, {
+              name: trimmedName,
+              createdBy: this.currentUser.uid,
+              createdAt: serverTimestamp(),
+              backgroundImage: imageBase64,
+              micSlots: initialMicSlots,
+              micLocks: initialMicLocks, 
+              customId: newCustomId
+            });
+            
+            await update(userRef, { diamonds: increment(-ROOM_CREATION_COST) });
+
+            return true;
+        } catch (error) {
+            console.error("Error creating room:", error);
+            alert("حدث خطأ أثناء إنشاء الغرفة.");
+            return null;
+        }
+      }
+
+      async joinRoom(roomId) {
+        const roomRef = ref(this.db, `rooms/${roomId}`);
+        const roomSnapshot = await get(roomRef);
+        if (!roomSnapshot.exists()) {
+            alert("هذه الغرفة غير موجودة.");
+            return;
+        }
+        const roomData = roomSnapshot.val();
+
+        const banData = roomData.banned && roomData.banned[this.currentUser.uid];
+        if (banData) {
+            if (typeof banData === 'object' && banData.expires) {
+                if (Date.now() < banData.expires) {
+                    alert(`أنت محظور من هذه الغرفة مؤقتاً.`);
+                    return;
+                }
+            } else if (banData === true) {
+                alert("أنت محظور من دخول هذه الغرفة.");
+                return;
+            }
+        }
+        
+        if (roomData.password && roomData.createdBy !== this.currentUser.uid) {
+            const enteredPassword = prompt("هذه الغرفة محمية برمز سري. الرجاء إدخال الرمز:");
+            if (enteredPassword !== roomData.password) {
+                alert("الرمز السري غير صحيح.");
+                return;
+            }
+        }
+
+        this.currentRoomId = roomId;
+        document.getElementById('app-container').style.display = 'none';
+        document.getElementById('chat-container').style.display = 'flex';
+        
+        const presenceRef = ref(this.db, `rooms/${roomId}/presence/${this.currentUser.uid}`);
+        set(presenceRef, true);
+        onDisconnect(presenceRef).remove();
+        
+        this.initWebRTCSignaling();
+
+        this.displayRoomHeaderInfo(roomId);
+        this.setupMicSlots();
+        await this.loadInitialMessages(roomId);
+        this.listenForNewMessages(roomId);
+        this.listenToMicChanges(roomId);
+      }
+      
+      async displayRoomHeaderInfo(roomId) {
+          const roomRef = ref(this.db, `rooms/${roomId}`);
+          const roomSnapshot = await get(roomRef);
+          if (!roomSnapshot.exists()) return;
+          const roomData = roomSnapshot.val();
+          this.currentRoomData = { id: roomId, ...roomData };
+
+          document.getElementById('chat-container').style.backgroundImage = `url(${roomData.backgroundImage})`;
+          const infoContainer = document.getElementById('owner-info-container');
+          infoContainer.innerHTML = `
+            <div class="owner-details">
+                <span class="owner-name">${roomData.name}</span>
+                <span class="owner-id">ID: ${roomData.customId || 'N/A'}</span>
+            </div>
+            <img src="${roomData.backgroundImage}" alt="Room Picture" class="owner-avatar">
+          `;
+
+          const editRoomBtn = document.getElementById('edit-room-btn');
+          const admins = roomData.admins || {};
+          const currentUserPerms = admins[this.currentUser.uid] || {};
+          const isSuperAdmin = roomData.createdBy === this.currentUser.uid;
+
+          if (isSuperAdmin || currentUserPerms.canEditRoom) {
+              editRoomBtn.style.display = 'block';
+              editRoomBtn.onclick = () => {
+                  const editModal = document.getElementById('edit-room-modal');
+                  const editNameInput = document.getElementById('edit-room-name-input');
+                  const editImageContainer = document.getElementById('edit-image-preview-container');
+                  const editImagePreview = document.getElementById('edit-image-preview');
+                  const editImageText = document.getElementById('edit-image-preview-text');
+                  const editPasswordInput = document.getElementById('edit-room-password-input');
+                  
+                  editImageContainer.style.display = isSuperAdmin ? 'flex' : 'none';
+                  editPasswordInput.style.display = isSuperAdmin ? 'block' : 'none';
+                  if (isSuperAdmin) {
+                      editPasswordInput.value = roomData.password || '';
+                  }
+
+                  editNameInput.value = roomData.name;
+                  editNameInput.disabled = false;
+                  editNameInput.placeholder = "اكتب اسم الغرفة الجديد...";
+
+                  const nameLastChanged = roomData.nameLastChanged || 0;
+                  const thirtyDaysInMillis = 30 * 24 * 60 * 60 * 1000;
+                  const timeSinceChange = Date.now() - nameLastChanged;
+                  
+                  if (timeSinceChange < thirtyDaysInMillis && !isSuperAdmin) {
+                      const daysRemaining = Math.ceil((thirtyDaysInMillis - timeSinceChange) / (1000 * 60 * 60 * 24));
+                      editNameInput.disabled = true;
+                      editNameInput.placeholder = `يمكنك التغيير مرة أخرى بعد ${daysRemaining} يوم`;
+                  }
+                  
+                  editImagePreview.src = roomData.backgroundImage;
+                  editImagePreview.style.display = 'block';
+                  editImageText.style.display = 'none';
+                  
+                  editModal.style.display = 'flex';
+              };
+          } else {
+              editRoomBtn.style.display = 'none';
+              editRoomBtn.onclick = null;
+          }
+          
+          const joinRoomBtn = document.getElementById('join-room-btn');
+          this.updateJoinButtonStatus(roomId);
+          joinRoomBtn.onclick = () => this.toggleJoinStatus();
+      }
+
+      async updateJoinButtonStatus(roomId) {
+        const joinRoomBtn = document.getElementById('join-room-btn');
+        if (!joinRoomBtn) return;
+        if (this.joinedRoomsIds.has(roomId)) {
+            joinRoomBtn.classList.add('joined');
+        } else {
+            joinRoomBtn.classList.remove('joined');
+        }
+      }
+
+      async toggleJoinStatus() {
+        if (!this.currentRoomId) return;
+        const joinRoomBtn = document.getElementById('join-room-btn');
+        const joinRef = ref(this.db, `users/${this.currentUser.uid}/joinedRooms/${this.currentRoomId}`);
+        const isJoined = this.joinedRoomsIds.has(this.currentRoomId);
+
+        if (isJoined) {
+            await remove(joinRef);
+            this.joinedRoomsIds.delete(this.currentRoomId);
+            joinRoomBtn.classList.remove('joined');
+        } else {
+            await set(joinRef, true);
+            this.joinedRoomsIds.add(this.currentRoomId);
+            joinRoomBtn.classList.add('joined');
+        }
+      }
+      
+      async updateRoom(newName, newImageFile) {
+        if (!this.currentRoomId) return;
+
+        const roomRef = ref(this.db, `rooms/${this.currentRoomId}`);
+        const roomSnapshot = await get(roomRef);
+        if (!roomSnapshot.exists()) {
+            alert("الغرفة لم تعد موجودة.");
+            return false;
+        }
+        const currentRoomData = roomSnapshot.val();
+        const isOwner = currentRoomData.createdBy === this.currentUser.uid;
+
+        if (newImageFile && !isOwner) {
+            alert("فقط مالك الغرفة يمكنه تغيير الصورة.");
+            return false;
+        }
+
+        const trimmedName = newName.trim();
+        if (!trimmedName) { alert("اسم الغرفة لا يمكن أن يكون فارغًا."); return false; }
+
+        const updates = {};
+        let nameIsChanging = trimmedName !== currentRoomData.name;
+
+        if (nameIsChanging) {
+            const nameLastChanged = currentRoomData.nameLastChanged || 0;
+            const thirtyDaysInMillis = 30 * 24 * 60 * 60 * 1000;
+            const timeSinceChange = Date.now() - nameLastChanged;
+            
+            if (timeSinceChange < thirtyDaysInMillis) {
+                const daysRemaining = Math.ceil((thirtyDaysInMillis - timeSinceChange) / (1000 * 60 * 60 * 24));
+                alert(`لا يمكنك تغيير الاسم الآن. الرجاء الانتظار ${daysRemaining} يوم.`);
+                return false;
+            }
+            updates.name = trimmedName;
+            updates.nameLastChanged = serverTimestamp();
+        }
+        
+        if (isOwner) {
+            const newPassword = document.getElementById('edit-room-password-input').value.trim();
+            if (newPassword !== (currentRoomData.password || '')) {
+                updates.password = newPassword === '' ? null : newPassword;
+            }
+        }
+
+        try {
+            if (newImageFile) {
+                const getBase64 = (file) => new Promise((resolve, reject) => {
+                    const reader = new FileReader(); reader.readAsDataURL(file);
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = (error) => reject(error);
+                });
+                updates.backgroundImage = await getBase64(newImageFile);
+            }
+
+            if (Object.keys(updates).length > 0) {
+                 await update(roomRef, updates);
+            }
+           
+            this.displayRoomHeaderInfo(this.currentRoomId);
+            return true;
+        } catch(error) {
+            console.error("Error updating room:", error);
+            alert("حدث خطأ أثناء تحديث الغرفة.");
+            return false;
+        }
+      }
+
+      async fetchJoinedRooms() {
+          const joinRef = ref(this.db, `users/${this.currentUser.uid}/joinedRooms`);
+          const snapshot = await get(joinRef);
+          if (snapshot.exists()) {
+              this.joinedRoomsIds = new Set(Object.keys(snapshot.val()));
+          } else {
+              this.joinedRoomsIds.clear();
+          }
+      }
+
+      setFilter(filterType) {
+          if (this.currentFilter === filterType) return;
+          this.currentFilter = filterType;
+          this.renderFilteredRooms();
+      }
+
+      listenForRoomUpdates() {
+          this.listeners.rooms = { ref: this.roomsRef, type: 'value' };
+          onValue(this.roomsRef, (snapshot) => {
+              this.allRoomsData = {};
+              if (snapshot.exists()) {
+                  snapshot.forEach((childSnapshot) => {
+                      const roomData = childSnapshot.val();
+                      if (roomData && roomData.backgroundImage) {
+                          roomData.id = childSnapshot.key;
+                          this.allRoomsData[roomData.id] = roomData;
+                      }
+                  });
+              }
+              this.renderFilteredRooms();
+          });
+      }
+
+      renderFilteredRooms() {
+          const roomsGrid = document.getElementById('rooms-grid');
+          roomsGrid.innerHTML = '';
+          let roomsToDisplay = [];
+
+          if (this.currentFilter === 'joined') {
+              this.joinedRoomsIds.forEach(roomId => {
+                  if (this.allRoomsData[roomId]) {
+                      roomsToDisplay.push(this.allRoomsData[roomId]);
+                  }
+              });
+          } else { // 'all'
+              roomsToDisplay = Object.values(this.allRoomsData);
+          }
+          
+          if (roomsToDisplay.length === 0) {
+               const message = this.currentFilter === 'joined' ? 'أنت لم تنضم إلى أي غرفة بعد.' : 'لا توجد غرف متاحة، قم بإنشاء واحدة!';
+               roomsGrid.innerHTML = `<p style="grid-column: 1 / -1; text-align: center;">${message}</p>`;
+               return;
+          }
+
+          roomsToDisplay.forEach(room => {
+              this.displayRoomCard(room);
+          });
+      }
+
+      displayRoomCard(room) {
+        const roomsGrid = document.getElementById('rooms-grid');
+        const card = document.createElement('div');
+        card.className = 'room-card';
+        const onlineCount = room.presence ? Object.keys(room.presence).length : 0;
+        const isLocked = room.password ? '<i class="fas fa-lock" style="margin-left: 8px; color: var(--gold-accent);"></i>' : '';
+
+        card.innerHTML = `
+          <img src="${room.backgroundImage}" alt="Room Background" class="room-card-bg">
+          <div class="room-card-overlay"></div>
+          <div class="room-members-count"><i class="fas fa-user-friends"></i><span>${onlineCount}</span></div>
+          <div class="room-card-content"><div class="room-name">${room.name}${isLocked}</div></div>
+        `;
+        card.addEventListener('click', () => this.joinRoom(room.id));
+        roomsGrid.appendChild(card);
+      }
+
+      async leaveRoom() {
+        if (this.currentRoomId) {
+            const presenceNodeRef = ref(this.db, `rooms/${this.currentRoomId}/presence`);
+            const presenceSnapshot = await get(presenceNodeRef);
+
+            if (presenceSnapshot.exists() && presenceSnapshot.size <= 1) {
+                const messagesNodeRef = ref(this.db, `rooms/${this.currentRoomId}/messages`);
+                await remove(messagesNodeRef);
+            }
+
+            const selfPresenceRef = ref(this.db, `rooms/${this.currentRoomId}/presence/${this.currentUser.uid}`);
+            remove(selfPresenceRef);
+        }
+        this.stopAudioStream();
+        this.cleanupAllWebRTC();
+        
+        Object.values(this.listeners).forEach(listener => off(listener.ref, listener.type));
+        this.listeners = {};
+        this.currentRoomId = null;
+        this.userCache = {};
+        document.getElementById('chat-container').style.display = 'none';
+        document.getElementById('app-container').style.display = 'block';
+        document.getElementById('chat-container').style.backgroundImage = `url('https://www.transparenttextures.com/patterns/dark-denim-3.png')`;
+      }
+
+      setupMicSlots() {
+          const micGrid = document.getElementById('mic-grid');
+          micGrid.innerHTML = '';
+          for (let i = 1; i <= 4; i++) {
+              const micSlot = document.createElement('div');
+              micSlot.className = 'mic-slot';
+              micSlot.dataset.micId = `mic${i}`;
+              micSlot.innerHTML = `
+                <span class="mic-number">${i}</span>
+                <i class="fas fa-microphone-slash mic-icon"></i>
+                <div class="mic-status-icons"></div>
+              `;
+              micSlot.onclick = () => this.openMicControlModal(`mic${i}`);
+              micGrid.appendChild(micSlot);
+          }
+      }
+      
+      listenToMicChanges(roomId) {
+          const roomStateRef = ref(this.db, `rooms/${roomId}`);
+          this.listeners.mics = { ref: roomStateRef, type: 'value' };
+          
+          onValue(roomStateRef, async (snapshot) => {
+              if (!this.currentRoomId || !snapshot.exists()) return;
+              
+              const roomData = snapshot.val();
+              this.currentRoomData = { id: roomId, ...roomData };
+
+              // --- 1. تحديد الأدوار والمستخدمين ---
+              const broadcasters = Object.values(roomData.micSlots || {}).filter(u => u && u.uid).map(u => u.uid);
+              const allPresentUsers = Object.keys(roomData.presence || {});
+              const myId = this.currentUser.uid;
+              const amIBroadcaster = broadcasters.includes(myId);
+
+              // --- 2. تحديد الاتصالات المطلوبة ---
+              let requiredPeers = new Set();
+              if (amIBroadcaster) {
+                  allPresentUsers.forEach(uid => {
+                      if (uid !== myId) requiredPeers.add(uid);
+                  });
+              } else {
+                  broadcasters.forEach(uid => {
+                      requiredPeers.add(uid);
+                  });
+              }
+
+              const currentPeers = new Set(Object.keys(this.peerConnections));
+
+              // --- 3. إنشاء الاتصالات الجديدة ---
+              requiredPeers.forEach(peerId => {
+                  if (!currentPeers.has(peerId)) {
+                      const amITheInitiator = myId < peerId;
+                      if (amITheInitiator) {
+                          this.createPeerConnection(peerId, true);
+                      }
+                  }
+              });
+
+              // --- 4. إغلاق الاتصالات القديمة ---
+              currentPeers.forEach(peerId => {
+                  if (!requiredPeers.has(peerId)) {
+                      this.cleanupPeerConnection(peerId);
+                  }
+              });
+
+              // --- 5. تحديث واجهة المستخدم للمايكات (مع تصحيح الخطأ) ---
+              const micSlotsData = roomData.micSlots || {};
+              const micLocksData = roomData.micLocks || {};
+
+              for (let i = 1; i <= 4; i++) {
+                  const micId = `mic${i}`;
+                  const micSlotData = micSlotsData[micId]; 
+                  const isLocked = micLocksData[micId] || false;
+                  
+                  const micSlotElement = document.querySelector(`[data-mic-id="${micId}"]`);
+                  if (!micSlotElement) continue;
+
+                  let statusIconsHTML = '';
+
+                  if (micSlotData && micSlotData.uid) {
+                      const userData = await this.getUserData(micSlotData.uid);
+                      const avatarUrl = userData.profilePicture || userData.avatar;
+                      if (micSlotData.isMuted) {
+                          statusIconsHTML += `<i class="fas fa-microphone-slash status-icon"></i>`;
+                      }
+                      micSlotElement.classList.add('occupied');
+                      micSlotElement.innerHTML = `
+                          <img src="${avatarUrl}" alt="Avatar" class="user-avatar" data-uid="${micSlotData.uid}">
+                          <div class="mic-status-icons">${statusIconsHTML}</div>
+                      `;
+                  } else {
+                      if (isLocked) {
+                          statusIconsHTML += `<i class="fas fa-lock status-icon"></i>`;
+                      }
+                      micSlotElement.classList.remove('occupied');
+                      micSlotElement.innerHTML = `
+                          <span class="mic-number">${i}</span>
+                          <i class="fas fa-microphone-slash mic-icon"></i>
+                          <div class="mic-status-icons">${statusIconsHTML}</div>
+                      `;
+                  }
+              }
+          });
+      }
+      
+      async openMicControlModal(micId) {
+          const modal = document.getElementById('mic-control-modal');
+          const buttonsContainer = document.getElementById('mic-modal-buttons');
+          buttonsContainer.querySelectorAll('button').forEach(btn => btn.style.display = 'none');
+
+          const roomData = this.currentRoomData;
+          const micSlotData = (roomData.micSlots && roomData.micSlots[micId]) ? roomData.micSlots[micId] : null;
+          const isLocked = (roomData.micLocks && roomData.micLocks[micId]) || false;
+          
+          const admins = roomData.admins || {};
+          const currentUserPerms = admins[this.currentUser.uid] || {};
+          const isSuperAdmin = roomData.createdBy === this.currentUser.uid;
+          const isAdmin = isSuperAdmin || currentUserPerms.canManageMics;
+
+          if (!micSlotData) {
+              const takeBtn = document.getElementById('mic-modal-take');
+              takeBtn.style.display = 'block';
+              takeBtn.disabled = false;
+              takeBtn.onclick = () => this.takeMic(micId);
+              if (isLocked && !isSuperAdmin && !currentUserPerms.canManageMics) {
+                  takeBtn.disabled = true;
+              }
+              if (isSuperAdmin || currentUserPerms.canManageMics) {
+                  const lockBtn = document.getElementById(isLocked ? 'mic-modal-unlock' : 'mic-modal-lock');
+                  lockBtn.style.display = 'block';
+                  lockBtn.onclick = () => this.toggleLockMic(micId, isLocked);
+              }
+          }
+          else if (micSlotData.uid === this.currentUser.uid) {
+              const leaveBtn = document.getElementById('mic-modal-leave');
+              leaveBtn.style.display = 'block';
+              leaveBtn.onclick = () => this.leaveMic(micId);
+
+              const muteBtn = document.getElementById('mic-modal-toggle-mute');
+              muteBtn.style.display = 'block';
+              muteBtn.textContent = micSlotData.isMuted ? "إلغاء كتم الصوت" : "كتم الصوت";
+              muteBtn.onclick = () => this.toggleSelfMute(micId, micSlotData.isMuted);
+          }
+          else if (isAdmin) {
+              const kickBtn = document.getElementById('mic-modal-kick');
+              kickBtn.style.display = 'block';
+              kickBtn.onclick = () => this.adminKickMic(micId);
+              
+              if (micSlotData.isMuted) {
+                  const unmuteBtn = document.getElementById('mic-modal-admin-unmute');
+                  unmuteBtn.style.display = 'block';
+                  unmuteBtn.onclick = () => this.adminToggleMute(micId, false);
+              } else {
+                  const muteBtn = document.getElementById('mic-modal-admin-mute');
+                  muteBtn.style.display = 'block';
+                  muteBtn.onclick = () => this.adminToggleMute(micId, true);
+              }
+          }
+          else {
+              return;
+          }
+          
+          modal.style.display = 'flex';
+      }
+
+      async takeMic(micId) {
+        await this.startAudioStream(micId);
+        if(!this.localStream) return;
+
+        const allMicsData = this.currentRoomData.micSlots || {};
+        for(const key in allMicsData){
+            if(allMicsData[key] && allMicsData[key].uid === this.currentUser.uid){
+                const otherMicRef = ref(this.db, `rooms/${this.currentRoomId}/micSlots/${key}`);
+                await set(otherMicRef, null);
+            }
+        }
+        const micRef = ref(this.db, `rooms/${this.currentRoomId}/micSlots/${micId}`);
+        await set(micRef, { uid: this.currentUser.uid, isMuted: false });
+        document.getElementById('mic-control-modal').style.display = 'none';
+      }
+
+      async leaveMic(micId) {
+        this.stopAudioStream();
+        const micRef = ref(this.db, `rooms/${this.currentRoomId}/micSlots/${micId}`);
+        await set(micRef, null);
+        document.getElementById('mic-control-modal').style.display = 'none';
+      }
+
+      async toggleSelfMute(micId, currentState) {
+        const micRef = ref(this.db, `rooms/${this.currentRoomId}/micSlots/${micId}/isMuted`);
+        await set(micRef, !currentState);
+        if (this.localStream) {
+            this.localStream.getAudioTracks().forEach(track => {
+                track.enabled = currentState;
+            });
+        }
+        document.getElementById('mic-control-modal').style.display = 'none';
+      }
+
+      async toggleLockMic(micId, currentState) {
+        const lockRef = ref(this.db, `rooms/${this.currentRoomId}/micLocks/${micId}`);
+        await set(lockRef, !currentState);
+        document.getElementById('mic-control-modal').style.display = 'none';
+      }
+      
+      async adminKickMic(micId) {
+        const micRef = ref(this.db, `rooms/${this.currentRoomId}/micSlots/${micId}`);
+        await set(micRef, null);
+        document.getElementById('mic-control-modal').style.display = 'none';
+      }
+
+      async adminToggleMute(micId, muteState) {
+        const micRef = ref(this.db, `rooms/${this.currentRoomId}/micSlots/${micId}/isMuted`);
+        await set(micRef, muteState);
+        document.getElementById('mic-control-modal').style.display = 'none';
+      }
+      
+      async sendMessage(text, isGift = false) {
+        const trimmedText = text.trim();
+        if (!trimmedText || !this.currentRoomId) return;
+        const roomMessagesRef = ref(this.db, `rooms/${this.currentRoomId}/messages`);
+        
+        const messagePayload = {
+            text: trimmedText,
+            senderId: this.currentUser.uid,
+            timestamp: serverTimestamp()
+        };
+
+        if (isGift) {
+            messagePayload.type = 'gift';
+        }
+
+        await push(roomMessagesRef, messagePayload);
+
+        const messagesSnapshot = await get(roomMessagesRef);
+        if (messagesSnapshot.exists() && messagesSnapshot.size > 50) {
+            const updates = {};
+            let count = 0;
+            const excess = messagesSnapshot.size - 50;
+            messagesSnapshot.forEach((child) => {
+                if (count < excess) {
+                    updates[child.key] = null;
+                }
+                count++;
+            });
+            await update(roomMessagesRef, updates);
+        }
+      }
+
+      async loadInitialMessages(roomId) {
+        const messagesContainer = document.getElementById('messages-container');
+        messagesContainer.innerHTML = '';
+        const messagesQuery = query(ref(this.db, `rooms/${roomId}/messages`), orderByChild('timestamp'));
+        const snapshot = await get(messagesQuery);
+
+        if (snapshot.exists()) {
+            const messagePromises = [];
+            snapshot.forEach(child => {
+                const msg = child.val();
+                messagePromises.push(this.displayMessage(msg));
+            });
+            await Promise.all(messagePromises);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+      }
+
+      listenForNewMessages(roomId) {
+        if (this.listeners.newMessages) {
+            off(this.listeners.newMessages.ref, this.listeners.newMessages.type);
+        }
+        
+        const messagesRef = ref(this.db, `rooms/${roomId}/messages`);
+        const newMessagesQuery = query(messagesRef, orderByChild('timestamp'), startAt(Date.now()));
+        
+        this.listeners.newMessages = { ref: newMessagesQuery, type: 'child_added' };
+
+        onChildAdded(newMessagesQuery, async (snapshot) => {
+            if (snapshot.exists()) {
+                const msg = snapshot.val();
+                
+                await this.displayMessage(msg);
+                document.getElementById('messages-container').scrollTop = document.getElementById('messages-container').scrollHeight;
+
+                if (msg.type === 'gift' && msg.giftInfo) {
+                    const giftId = msg.giftInfo.id;
+                    const valuableGift = gifts.valuable.find(g => g.id === giftId);
+                    if (valuableGift && valuableGift.video) {
+                        this.playGiftAnimation(valuableGift.video);
+                    }
+                }
+            }
+        });
+      }
+
+      async showUserProfile(userId) {
+          const userData = await this.getUserData(userId);
+          const modal = document.getElementById('user-profile-modal');
+          
+          document.getElementById('profile-modal-img').src = userData.profilePicture || userData.avatar;
+          document.getElementById('profile-modal-name').textContent = userData.name;
+          document.getElementById('profile-modal-id').textContent = `ID: ${userData.customId || 'N/A'}`;
+
+          const adminControls = document.getElementById('profile-modal-admin-controls');
+          const saveBtn = document.getElementById('profile-modal-save-btn');
+          const banBtn = document.getElementById('profile-modal-ban-btn');
+          
+          const isSuperAdmin = this.currentRoomData.createdBy === this.currentUser.uid;
+          const targetUserIsSuperAdmin = this.currentRoomData.createdBy === userId;
+          const admins = this.currentRoomData.admins || {};
+          const currentUserPerms = admins[this.currentUser.uid] || {};
+          const targetUserIsAdmin = admins[userId] ? true : false;
+          
+          const canManageAdmins = isSuperAdmin && userId !== this.currentUser.uid && !targetUserIsSuperAdmin;
+          const canPerformBan = (isSuperAdmin || currentUserPerms.canKickUsers) && userId !== this.currentUser.uid && !targetUserIsSuperAdmin && !targetUserIsAdmin;
+          
+          adminControls.style.display = canManageAdmins ? 'block' : 'none';
+          saveBtn.style.display = canManageAdmins ? 'block' : 'none';
+
+          if (canManageAdmins) {
+              const userPerms = admins[userId] || {};
+              document.getElementById('perm-edit-room').checked = userPerms.canEditRoom || false;
+              document.getElementById('perm-kick-users').checked = userPerms.canKickUsers || false;
+              document.getElementById('perm-manage-mics').checked = userPerms.canManageMics || false;
+              const chkSuper = document.getElementById('perm-super-admin');
+              chkSuper.checked = userPerms.canEditRoom && userPerms.canKickUsers && userPerms.canManageMics;
+              chkSuper.onchange = () => {
+                  const isChecked = chkSuper.checked;
+                  document.getElementById('perm-edit-room').checked = isChecked;
+                  document.getElementById('perm-kick-users').checked = isChecked;
+                  document.getElementById('perm-manage-mics').checked = isChecked;
+              };
+              saveBtn.onclick = () => this.savePermissions(userId);
+          }
+          
+          banBtn.style.display = canPerformBan ? 'block' : 'none';
+          if (canPerformBan) {
+              const banRef = ref(this.db, `rooms/${this.currentRoomId}/banned/${userId}`);
+              const banSnapshot = await get(banRef);
+              if (banSnapshot.exists()) {
+                  banBtn.textContent = 'رفع الحظر';
+                  banBtn.onclick = () => this.liftBan(userId);
+              } else {
+                  banBtn.textContent = 'حظر المستخدم';
+                  banBtn.onclick = () => this.openBanModal(userId, userData.name);
+              }
+          }
+          modal.style.display = 'flex';
+      }
+
+      async savePermissions(targetUserId) {
+        const perms = {
+            canEditRoom: document.getElementById('perm-edit-room').checked,
+            canKickUsers: document.getElementById('perm-kick-users').checked,
+            canManageMics: document.getElementById('perm-manage-mics').checked,
+        };
+        const permsRef = ref(this.db, `rooms/${this.currentRoomId}/admins/${targetUserId}`);
+        await set(permsRef, perms);
+        alert("تم حفظ الصلاحيات بنجاح.");
+        document.getElementById('user-profile-modal').style.display = 'none';
+        
+        const roomRef = ref(this.db, `rooms/${this.currentRoomId}`);
+        const roomSnapshot = await get(roomRef);
+        this.currentRoomData = { id: this.currentRoomId, ...roomSnapshot.val() };
+      }
+
+      openBanModal(userId, userName) {
+        const modal = document.getElementById('ban-options-modal');
+        document.getElementById('ban-modal-username').textContent = userName;
+        
+        modal.querySelectorAll('.modal-button[data-duration]').forEach(btn => {
+            btn.onclick = () => {
+                const duration = btn.dataset.duration;
+                this.banUser(userId, duration === 'permanent' ? 'permanent' : parseInt(duration));
+            };
+        });
+        
+        modal.style.display = 'flex';
+        document.getElementById('user-profile-modal').style.display = 'none';
+      }
+
+      async banUser(targetUserId, duration) {
+        let banValue;
+        if (duration === 'permanent') {
+            banValue = true;
+        } else {
+            banValue = { expires: Date.now() + duration };
+        }
+        
+        const banRef = ref(this.db, `rooms/${this.currentRoomId}/banned/${targetUserId}`);
+        await set(banRef, banValue);
+
+        const presenceRef = ref(this.db, `rooms/${this.currentRoomId}/presence/${targetUserId}`);
+        await remove(presenceRef);
+        for (let i = 1; i <= 4; i++) {
+            const micSlotRef = ref(this.db, `rooms/${this.currentRoomId}/micSlots/mic${i}`);
+            const micSnapshot = await get(micSlotRef);
+            if(micSnapshot.exists() && micSnapshot.val().uid === targetUserId) {
+                await set(micSlotRef, null);
+                break;
+            }
+        }
+        alert("تم حظر المستخدم بنجاح.");
+        document.getElementById('ban-options-modal').style.display = 'none';
+      }
+      
+      async liftBan(targetUserId) {
+        if (!confirm("هل أنت متأكد من رفع الحظر عن هذا المستخدم؟")) return;
+        const banRef = ref(this.db, `rooms/${this.currentRoomId}/banned/${targetUserId}`);
+        await remove(banRef);
+        alert("تم رفع الحظر بنجاح.");
+        document.getElementById('user-profile-modal').style.display = 'none';
+      }
+
+      async displayMessage(message) {
+        const userData = await this.getUserData(message.senderId);
+        const messagesContainer = document.getElementById('messages-container');
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message`;
+        
+        const avatarUrl = userData.profilePicture || userData.avatar;
+
+        msgDiv.innerHTML = `
+            <img src="${avatarUrl}" class="message-avatar" data-userid="${message.senderId}">
+            <div class="message-content">
+                <span class="message-sender-name">${userData.name}</span>
+                <p class="message-text">${message.text}</p>
+            </div>
+        `;
+        messagesContainer.appendChild(msgDiv);
+
+        msgDiv.querySelector('.message-avatar').addEventListener('click', (e) => {
+            const userId = e.target.getAttribute('data-userid');
+            if (userId) this.showUserProfile(userId);
+        });
+      }
+
+      async getUserData(uid) {
+        if (this.userCache[uid]) {
+            return this.userCache[uid];
+        }
+        const userRef = ref(this.db, `users/${uid}`);
+        const userSnapshot = await get(userRef);
+        if (userSnapshot.exists()) {
+            const userData = userSnapshot.val();
+            const defaultData = { name: 'مستخدم', avatar: 'https://i.ibb.co/688p9bB/default-avatar.jpg', ...userData };
+            this.userCache[uid] = defaultData;
+            return defaultData;
+        }
+        return { name: 'مستخدم غير معروف', avatar: 'https://i.ibb.co/688p9bB/default-avatar.jpg' };
+      }
+      
+      async startAudioStream(micId) {
+        try {
+            if(this.localStream) this.stopAudioStream();
+            this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            this.analyser = this.audioContext.createAnalyser();
+            const source = this.audioContext.createMediaStreamSource(this.localStream);
+            source.connect(this.analyser);
+
+            this.analyser.fftSize = 256;
+            const bufferLength = this.analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            const detectSpeaking = () => {
+                if (!this.analyser) return;
+                this.analyser.getByteFrequencyData(dataArray);
+                let sum = 0;
+                for (let i = 0; i < bufferLength; i++) {
+                    sum += dataArray[i];
+                }
+                let avg = sum / bufferLength;
+
+                const micSlotElement = document.querySelector(`[data-mic-id="${micId}"]`);
+                const avatar = micSlotElement ? micSlotElement.querySelector('.user-avatar') : null;
+                
+                if (avatar) {
+                    if (avg > 20) {
+                        avatar.classList.add('speaking');
+                    } else {
+                        avatar.classList.remove('speaking');
+                    }
+                }
+
+                this.animationFrameId = requestAnimationFrame(detectSpeaking);
+            };
+
+            detectSpeaking();
+            return true;
+
+        } catch (error) {
+            console.error("Error accessing microphone:", error);
+            alert("لم يتم العثور على مايكروفون أو تم رفض الإذن.");
+            this.stopAudioStream();
+            return false;
+        }
+      }
+
+      stopAudioStream() {
+        if (this.localStream) {
+            this.localStream.getTracks().forEach(track => track.stop());
+            this.localStream = null;
+        }
+        if (this.audioContext) {
+            this.audioContext.close();
+            this.audioContext = null;
+        }
+        if (this.animationFrameId) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
+        }
+      }
+      
+      playGiftAnimation(videoFile) {
+        this.animationQueue.push(videoFile);
+        this.processAnimationQueue();
+      }
+
+      processAnimationQueue() {
+        if (this.isAnimating || this.animationQueue.length === 0) {
+            return;
+        }
+
+        this.isAnimating = true;
+        const videoFile = this.animationQueue.shift();
+
+        const overlay = document.getElementById('gift-animation-overlay');
+        const video = document.getElementById('gift-animation-video');
+
+        if (!overlay || !video) {
+            this.isAnimating = false;
+            return;
+        }
+
+        const handleVideoEnd = () => {
+            overlay.style.display = 'none';
+            video.pause();
+            video.currentTime = 0;
+            
+            video.removeEventListener('canplaythrough', handleCanPlay);
+            video.removeEventListener('ended', handleVideoEnd);
+            
+            this.isAnimating = false;
+            this.processAnimationQueue();
+        };
+
+        const handleCanPlay = () => {
+            overlay.style.display = 'flex';
+            video.play().catch(e => {
+                console.error("Video play failed:", e);
+                handleVideoEnd();
+            });
+        };
+        
+        video.addEventListener('ended', handleVideoEnd, { once: true });
+        video.addEventListener('canplaythrough', handleCanPlay, { once: true });
+
+        video.src = videoFile;
+      }
+
+      async initWebRTCSignaling() {
+          const signalsRef = ref(this.db, `rooms/${this.currentRoomId}/webrtc/${this.currentUser.uid}/signals`);
+          this.listeners.webrtc = { ref: signalsRef, type: 'child_added' };
+          
+          onChildAdded(signalsRef, async (snapshot) => {
+              if (!snapshot.exists()) return;
+              
+              const signal = snapshot.val();
+              remove(snapshot.ref);
+
+              switch(signal.type) {
+                case 'offer':
+                    await this.handleOffer(signal.senderId, signal.data);
+                    break;
+                case 'answer':
+                    await this.handleAnswer(signal.senderId, signal.data);
+                    break;
+                case 'iceCandidate':
+                    await this.handleIceCandidate(signal.senderId, signal.data);
+                    break;
+              }
+          });
+      }
+
+      async createPeerConnection(remoteUserId, isInitiator) {
+          if (this.peerConnections[remoteUserId]) return;
+          
+          const amIBroadcaster = Object.values(this.currentRoomData.micSlots || {})
+                                       .some(slot => slot && slot.uid === this.currentUser.uid);
+
+          this.peerConnections[remoteUserId] = new RTCPeerConnection(this.iceServers);
+          const pc = this.peerConnections[remoteUserId];
+
+          if (amIBroadcaster && this.localStream) {
+              this.localStream.getTracks().forEach(track => pc.addTrack(track, this.localStream));
+          }
+
+          pc.ontrack = (event) => {
+              let remoteAudio = document.getElementById('remote-audio-' + remoteUserId);
+              if (!remoteAudio) {
+                  remoteAudio = document.createElement('audio');
+                  remoteAudio.id = 'remote-audio-' + remoteUserId;
+                  remoteAudio.autoplay = true;
+                  remoteAudio.playsInline = true; 
+                  document.getElementById('remote-audio-container').appendChild(remoteAudio);
+              }
+              remoteAudio.srcObject = event.streams[0];
+          };
+
+          pc.onicecandidate = (event) => {
+              if (event.candidate) {
+                  const signalsRef = ref(this.db, `rooms/${this.currentRoomId}/webrtc/${remoteUserId}/signals`);
+                  push(signalsRef, {
+                      type: 'iceCandidate',
+                      senderId: this.currentUser.uid,
+                      data: event.candidate.toJSON()
+                  });
+              }
+          };
+
+          pc.onconnectionstatechange = () => {
+              if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+                  this.cleanupPeerConnection(remoteUserId);
+              }
+          };
+
+          if (isInitiator) {
+              try {
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                
+                const signalsRef = ref(this.db, `rooms/${this.currentRoomId}/webrtc/${remoteUserId}/signals`);
+                await push(signalsRef, {
+                    type: 'offer',
+                    senderId: this.currentUser.uid,
+                    data: { sdp: offer.sdp, type: offer.type }
+                });
+
+              } catch (e) {
+                console.error(`Error creating offer for ${remoteUserId}: ${e.message}`);
+              }
+          }
+      }
+
+      async handleOffer(senderId, offer) {
+        try {
+            await this.createPeerConnection(senderId, false);
+            const pc = this.peerConnections[senderId];
+            if (!pc) return;
+            
+            await pc.setRemoteDescription(new RTCSessionDescription(offer));
+            
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            
+            const signalsRef = ref(this.db, `rooms/${this.currentRoomId}/webrtc/${senderId}/signals`);
+            await push(signalsRef, {
+                type: 'answer',
+                senderId: this.currentUser.uid,
+                data: { sdp: answer.sdp, type: answer.type }
+            });
+
+            await this.applyBufferedIceCandidates(senderId);
+        } catch (e) {
+            console.error(`ERROR in handleOffer from ${senderId}: ${e.message}`);
+        }
+      }
+
+      async handleAnswer(senderId, answer) {
+        try {
+            const pc = this.peerConnections[senderId];
+            if (pc && !pc.currentRemoteDescription) {
+                await pc.setRemoteDescription(new RTCSessionDescription(answer));
+            }
+            await this.applyBufferedIceCandidates(senderId);
+        } catch (e) {
+            console.error(`ERROR in handleAnswer from ${senderId}: ${e.message}`);
+        }
+      }
+
+      async handleIceCandidate(senderId, candidate) {
+          try {
+            const pc = this.peerConnections[senderId];
+            if (pc && pc.remoteDescription) {
+                await pc.addIceCandidate(new RTCIceCandidate(candidate));
+            } else {
+                if (!this.iceCandidateBuffer[senderId]) {
+                    this.iceCandidateBuffer[senderId] = [];
+                }
+                this.iceCandidateBuffer[senderId].push(candidate);
+            }
+          } catch(e) {
+            console.error(`Error adding ICE candidate from ${senderId}: ${e.message}`);
+          }
+      }
+
+      async applyBufferedIceCandidates(senderId) {
+        if (this.iceCandidateBuffer[senderId]) {
+            const pc = this.peerConnections[senderId];
+            if (pc) {
+                for (const candidate of this.iceCandidateBuffer[senderId]) {
+                    try {
+                        await pc.addIceCandidate(new RTCIceCandidate(candidate));
+                    } catch (e) {
+                       console.error(`Error applying buffered ICE candidate: ${e.message}`);
+                    }
+                }
+                delete this.iceCandidateBuffer[senderId];
+            }
+        }
+      }
+
+      cleanupPeerConnection(remoteUserId) {
+          if (this.peerConnections[remoteUserId]) {
+              this.peerConnections[remoteUserId].close();
+              delete this.peerConnections[remoteUserId];
+          }
+          const remoteAudio = document.getElementById('remote-audio-' + remoteUserId);
+          if (remoteAudio) {
+              remoteAudio.remove();
+          }
+      }
+
+      cleanupAllWebRTC() {
+          for (const userId in this.peerConnections) {
+              this.cleanupPeerConnection(userId);
+          }
+          if (this.listeners.webrtc) {
+              off(this.listeners.webrtc.ref);
+              delete this.listeners.webrtc;
+          }
+          if(this.currentRoomId) {
+            const mySignalRef = ref(this.db, `rooms/${this.currentRoomId}/webrtc/${this.currentUser.uid}`);
+            remove(mySignalRef);
+          }
+      }
+
+      unmuteAllRemoteAudio() {
+          const audioElements = document.querySelectorAll('#remote-audio-container audio');
+          audioElements.forEach(audio => {
+            audio.muted = false;
+            audio.play().catch(e => {
+                console.log("User interaction might still be needed to play audio.");
+            });
+          });
+      }
+      
+      loadGifts(category) {
+        const giftGrid = document.getElementById('gift-grid-container');
+        giftGrid.innerHTML = '';
+        gifts[category].forEach(gift => {
+            const item = document.createElement('div');
+            item.className = 'gift-item';
+            item.dataset.giftId = gift.id;
+            item.innerHTML = `
+                <img src="${gift.img}" alt="${gift.name}">
+                <span class="gift-name">${gift.name}</span>
+                <div class="gift-price">
+                    <span>${gift.price}</span>
+                    <i class="fas fa-gem"></i>
+                </div>
+            `;
+            item.addEventListener('click', () => {
+                const currentlySelected = document.querySelector('.gift-item.selected');
+                if (currentlySelected) {
+                    currentlySelected.classList.remove('selected');
+                }
+                item.classList.add('selected');
+                this.selectedGift = gift;
+            });
+            giftGrid.appendChild(item);
+        });
+      }
+      
+      async sendStructuredMessage(payload) {
+        if (!this.currentRoomId) return;
+        const roomMessagesRef = ref(this.db, `rooms/${this.currentRoomId}/messages`);
+        
+        const messagePayload = {
+            ...payload,
+            senderId: this.currentUser.uid,
+            timestamp: serverTimestamp()
+        };
+
+        await push(roomMessagesRef, messagePayload);
+      }
+
+      async sendGift() {
+        if (!this.selectedGift) {
+            alert("الرجاء اختيار هدية أولاً.");
+            return;
+        }
+
+        const quantity = parseInt(document.getElementById('gift-quantity').value) || 1;
+        const totalCost = this.selectedGift.price * quantity;
+
+        const userRef = ref(this.db, `users/${this.currentUser.uid}`);
+        const userSnapshot = await get(userRef);
+        const userData = userSnapshot.val();
+        const currentDiamonds = userData.diamonds || 0;
+
+        if (currentDiamonds < totalCost) {
+            alert("ليس لديك ما يكفي من الألماس!");
+            return;
+        }
+
+        await update(userRef, {
+            diamonds: increment(-totalCost)
+        });
+        
+        document.getElementById('user-diamond-balance').textContent = currentDiamonds - totalCost;
+
+        const singleRecipientEarning = Math.floor((this.selectedGift.price / 2) * quantity);
+        if (singleRecipientEarning >= 1) {
+            const presenceRef = ref(this.db, `rooms/${this.currentRoomId}/presence`);
+            const presenceSnapshot = await get(presenceRef);
+            if (presenceSnapshot.exists()) {
+                const recipientPromises = [];
+                presenceSnapshot.forEach(childSnapshot => {
+                    const recipientUid = childSnapshot.key;
+                    if (recipientUid !== this.currentUser.uid) {
+                        const recipientRef = ref(this.db, `users/${recipientUid}`);
+                        recipientPromises.push(update(recipientRef, { diamonds: increment(singleRecipientEarning) }));
+                    }
+                });
+                await Promise.all(recipientPromises);
+            }
+        }
+        
+        const senderData = await this.getUserData(this.currentUser.uid);
+        const giftMessageText = `${senderData.name} أرسل ${quantity}x ${this.selectedGift.name} 🎁`;
+        
+        const payload = {
+            text: giftMessageText,
+            type: 'gift',
+            giftInfo: {
+                id: this.selectedGift.id,
+                name: this.selectedGift.name,
+                img: this.selectedGift.img,
+                quantity: quantity
+            }
+        };
+        
+        await this.sendStructuredMessage(payload);
+        
+        const isValuable = gifts.valuable.some(g => g.id === this.selectedGift.id);
+        if (isValuable) {
+            const roomName = this.currentRoomData.name || 'غرفة غير معروفة';
+            const globalPayload = {
+                senderName: senderData.name,
+                giftName: `${quantity > 1 ? quantity + 'x ' : ''}${this.selectedGift.name}`,
+                roomName: roomName,
+                timestamp: serverTimestamp()
+            };
+            await push(this.globalAnnouncementsRef, globalPayload);
+        }
+
+        const closeGiftDrawer = () => {
+            document.getElementById('gift-drawer').classList.remove('open');
+            document.getElementById('gift-drawer-overlay').style.display = 'none';
+        };
+        closeGiftDrawer();
+      }
+
+      displayGlobalAnnouncement(announcement) {
+          const banner = document.getElementById('global-announcement-banner');
+          const bannerText = document.getElementById('global-announcement-text');
+          if (!banner || !bannerText) return;
+
+          bannerText.innerHTML = `🎉 <strong>${announcement.senderName}</strong> أرسل <strong>${announcement.giftName}</strong> في غرفة <strong>${announcement.roomName}</strong>!`;
+          banner.classList.add('show');
+
+          setTimeout(() => {
+              banner.classList.remove('show');
+          }, 7000);
+      }
+
+      listenForGlobalAnnouncements() {
+          const announcementsQuery = query(this.globalAnnouncementsRef, orderByChild('timestamp'), startAt(Date.now()));
+          this.listeners.globalAnnouncements = { ref: announcementsQuery, type: 'child_added' };
+
+          onChildAdded(announcementsQuery, (snapshot) => {
+              if (snapshot.exists()) {
+                  const announcement = snapshot.val();
+                  this.displayGlobalAnnouncement(announcement);
+              }
+          });
+      }
+    }
+    
+    function preloadGiftVideos() {
+        console.log("Starting preload for valuable gift videos...");
+        const valuableGifts = gifts.valuable;
+        for (const gift of valuableGifts) {
+            if (gift.video) {
+                const video = document.createElement('video');
+                video.src = gift.video;
+                video.preload = 'auto';
+            }
+        }
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      let activeUser = user || { uid: 'guest-' + Date.now(), isAnonymous: true, displayName: 'زائر' };
+      const userRef = ref(db, `users/${activeUser.uid}`);
+      const userSnapshot = await get(userRef);
+      if (!userSnapshot.exists()) {
+          const newCustomId = Math.floor(10000 + Math.random() * 90000);
+          set(userRef, { name: activeUser.displayName || `زائر`, profilePicture: 'https://i.ibb.co/688p9bB/default-avatar.jpg', customId: newCustomId, diamonds: 1000 });
+      } else {
+          const userData = userSnapshot.val();
+          if (!userData.customId) {
+              const newCustomId = Math.floor(10000 + Math.random() * 90000);
+              update(userRef, { customId: newCustomId });
+          }
+          if(typeof userData.diamonds === 'undefined'){
+              update(userRef, { diamonds: 1000 });
+          }
+      }
+
+      const chatManager = new ChatManager(db, activeUser);
+      await chatManager.fetchJoinedRooms();
+      chatManager.listenForRoomUpdates();
+      chatManager.listenForGlobalAnnouncements();
+      setupUI(chatManager);
+      
+      preloadGiftVideos();
+    });
+    
+    function setupUI(chatManager) {
+      const createModal = document.getElementById('create-room-modal');
+      const createRoomBtn = document.getElementById('create-room-btn');
+      const cancelCreateBtn = document.getElementById('cancel-create-btn');
+      const confirmCreateBtn = document.getElementById('confirm-create-btn');
+      const roomNameInput = document.getElementById('room-name-input');
+      const roomImageInput = document.getElementById('room-image-input');
+      const imagePreview = document.getElementById('image-preview');
+      const imagePreviewText = document.getElementById('image-preview-text');
+      let selectedFile = null;
+
+      createRoomBtn.addEventListener('click', () => {
+        roomNameInput.value = '';
+        roomImageInput.value = '';
+        selectedFile = null;
+        imagePreview.style.display = 'none';
+        imagePreviewText.style.display = 'block';
+        createModal.style.display = 'flex';
+      });
+      
+      roomImageInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+            selectedFile = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                imagePreview.src = event.target.result;
+                imagePreview.style.display = 'block';
+                imagePreviewText.style.display = 'none';
+            };
+            reader.readAsDataURL(selectedFile);
+        }
+      });
+
+      cancelCreateBtn.addEventListener('click', () => { createModal.style.display = 'none'; });
+
+      confirmCreateBtn.addEventListener('click', async () => {
+        confirmCreateBtn.disabled = true;
+        confirmCreateBtn.textContent = 'جاري الإنشاء...';
+        const success = await chatManager.createRoom(roomNameInput.value, selectedFile);
+        if (success) {
+            createModal.style.display = 'none';
+        }
+        confirmCreateBtn.disabled = false;
+        confirmCreateBtn.textContent = 'إنشاء';
+      });
+      
+      const exitRoomBtn = document.getElementById('exit-room-btn');
+      exitRoomBtn.addEventListener('click', () => chatManager.leaveRoom());
+
+      const sendBtn = document.getElementById('send-btn');
+      const messageInput = document.getElementById('message-input');
+      const sendMessage = () => {
+        if (messageInput.value.trim()) {
+            chatManager.sendMessage(messageInput.value);
+            messageInput.value = '';
+        }
+      };
+      sendBtn.addEventListener('click', sendMessage);
+      messageInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); sendMessage(); }
+      });
+      
+      const editModal = document.getElementById('edit-room-modal');
+      const cancelEditBtn = document.getElementById('cancel-edit-btn');
+      const confirmEditBtn = document.getElementById('confirm-edit-btn');
+      const editRoomNameInput = document.getElementById('edit-room-name-input');
+      const editRoomImageInput = document.getElementById('edit-room-image-input');
+      const editImagePreview = document.getElementById('edit-image-preview');
+      const editImageText = document.getElementById('edit-image-preview-text');
+      let selectedEditFile = null;
+      
+      editRoomImageInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+            selectedEditFile = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                editImagePreview.src = event.target.result;
+                editImagePreview.style.display = 'block';
+                editImageText.style.display = 'none';
+            };
+            reader.readAsDataURL(selectedEditFile);
+        }
+      });
+      
+      cancelEditBtn.addEventListener('click', () => {
+          editModal.style.display = 'none';
+          selectedEditFile = null;
+          editRoomImageInput.value = '';
+      });
+
+      confirmEditBtn.addEventListener('click', async () => {
+          confirmEditBtn.disabled = true;
+          confirmEditBtn.textContent = 'جاري الحفظ...';
+
+          const success = await chatManager.updateRoom(editRoomNameInput.value, selectedEditFile);
+          
+          if (success) {
+              editModal.style.display = 'none';
+              selectedEditFile = null;
+              editRoomImageInput.value = '';
+          }
+
+          confirmEditBtn.disabled = false;
+          confirmEditBtn.textContent = 'حفظ التغييرات';
+      });
+
+      const profileModal = document.getElementById('user-profile-modal');
+      const profileModalCloseBtn = document.getElementById('profile-modal-close-btn');
+      profileModalCloseBtn.addEventListener('click', () => {
+          profileModal.style.display = 'none';
+      });
+
+      const micModal = document.getElementById('mic-control-modal');
+      const micModalCancelBtn = document.getElementById('mic-modal-cancel-btn');
+      micModalCancelBtn.addEventListener('click', () => {
+          micModal.style.display = 'none';
+      });
+      
+      const banModal = document.getElementById('ban-options-modal');
+      const banModalCancelBtn = document.getElementById('ban-modal-cancel-btn');
+      banModalCancelBtn.addEventListener('click', () => {
+          banModal.style.display = 'none';
+      });
+      
+      const allRoomsBtn = document.getElementById('all-rooms-btn');
+      const joinedRoomsBtn = document.getElementById('joined-rooms-btn');
+      const filterButtons = [allRoomsBtn, joinedRoomsBtn];
+
+      allRoomsBtn.addEventListener('click', () => {
+          filterButtons.forEach(btn => btn.classList.remove('active'));
+          allRoomsBtn.classList.add('active');
+          chatManager.setFilter('all');
+      });
+
+      joinedRoomsBtn.addEventListener('click', () => {
+          filterButtons.forEach(btn => btn.classList.remove('active'));
+          joinedRoomsBtn.classList.add('active');
+          chatManager.setFilter('joined');
+      });
+
+      const unlockMedia = () => {
+          chatManager.unmuteAllRemoteAudio();
+
+          const giftVideo = document.getElementById('gift-animation-video');
+          if (giftVideo) {
+              giftVideo.play().catch(() => {});
+              giftVideo.pause();
+          }
+          
+          document.body.removeEventListener('click', unlockMedia);
+          document.body.removeEventListener('touchend', unlockMedia);
+      };
+      document.body.addEventListener('click', unlockMedia);
+      document.body.addEventListener('touchend', unlockMedia);
+
+      const giftDrawerBtn = document.getElementById('open-gift-drawer-btn');
+      const giftDrawer = document.getElementById('gift-drawer');
+      const giftDrawerOverlay = document.getElementById('gift-drawer-overlay');
+      const giftTabs = document.querySelectorAll('.gift-tabs button');
+      const sendGiftBtn = document.getElementById('send-gift-btn');
+
+      giftDrawerBtn.addEventListener('click', async () => {
+          const userRef = ref(chatManager.db, `users/${chatManager.currentUser.uid}`);
+          const userSnapshot = await get(userRef);
+          if(userSnapshot.exists()){
+            const userData = userSnapshot.val();
+            document.getElementById('user-diamond-balance').textContent = userData.diamonds || 0;
+          }
+
+          giftDrawer.classList.add('open');
+          giftDrawerOverlay.style.display = 'block';
+          chatManager.loadGifts('simple');
+      });
+
+      const closeGiftDrawer = () => {
+          giftDrawer.classList.remove('open');
+          giftDrawerOverlay.style.display = 'none';
+      };
+
+      giftDrawerOverlay.addEventListener('click', closeGiftDrawer);
+
+      giftTabs.forEach(tab => {
+          tab.addEventListener('click', () => {
+              giftTabs.forEach(t => t.classList.remove('active'));
+              tab.classList.add('active');
+              chatManager.loadGifts(tab.dataset.category);
+          });
+      });
+
+      sendGiftBtn.addEventListener('click', () => {
+          chatManager.sendGift();
+      });
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>تسجيل / دخول</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <style>
+    /* --- المتغيرات الرئيسية للتصميم (النمط الليلي الجديد) --- */
+    :root {
+      --bg-gradient-start: #232526;
+      --bg-gradient-end: #1a1a1c;
+      --card-bg: #2b2b2e;
+      --text-color: #ffffff;
+      --text-secondary: #b0b0b0;
+      --gold-accent: #fcd75c;
+      --blue-accent: #6a7bff;
+      --green-accent: #4ade80;
+      --red-accent: #ef4444;
+      --disabled-color: #5a5a5e;
+      --border-color: #44444a;
+      --shadow-color-blue: rgba(106, 123, 255, 0.35);
+      --shadow-color-gold: rgba(252, 215, 92, 0.25);
+      --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    /* --- إعادة تعيين الأنماط الأساسية --- */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* --- أنماط الجسم والخلفية --- */
+    body {
+      font-family: "Cairo", sans-serif;
+      /* استخدام ألوان الخلفية الجديدة */
+      background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+      color: var(--text-color);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    /* --- حاوية النموذج الرئيسية (شفافة) --- */
+    .form-container {
+      width: 100%;
+      max-width: 450px;
+      background: transparent;
+    }
+    
+    /* --- رأس النموذج --- */
+    .form-header {
+      background: transparent;
+      padding: 30px 25px;
+      text-align: center;
+    }
+    .form-header h2 { 
+        font-size: 34px; 
+        font-weight: 700; 
+        margin-bottom: 12px;
+        color: var(--gold-accent); /* استخدام اللون الذهبي للعنوان الرئيسي */
+        text-shadow: 0 0 10px var(--shadow-color-gold); /* إضافة توهج ذهبي */
+    }
+    .form-header p { 
+        font-size: 16px; 
+        color: var(--text-secondary); /* استخدام اللون الثانوي للنص الفرعي */
+    }
+    
+    /* --- محتوى النموذج --- */
+    .form-content { padding: 25px 15px; }
+    
+    /* --- مجموعات حقول الإدخال --- */
+    .input-group { position: relative; margin-bottom: 24px; }
+    
+    .input-group .icon {
+      position: absolute;
+      top: 50%;
+      right: 18px;
+      transform: translateY(-50%);
+      color: var(--text-secondary);
+      pointer-events: none;
+      z-index: 2;
+      transition: var(--transition);
+    }
+    
+    .input-field {
+      width: 100%;
+      padding: 15px 50px 15px 15px;
+      border-radius: 10px;
+      border: 2px solid var(--border-color);
+      background-color: var(--card-bg);
+      font-family: "Cairo", sans-serif;
+      font-size: 16px;
+      color: var(--text-color); /* لون النص المكتوب */
+      text-align: right;
+      transition: var(--transition);
+      position: relative;
+      z-index: 1;
+    }
+    .input-field::placeholder { color: var(--text-secondary); opacity: 0.7; }
+    
+    /* تحسين التركيز على الحقول */
+    .input-field:focus {
+      outline: none;
+      border-color: var(--blue-accent);
+      background-color: var(--card-bg);
+      box-shadow: 0 0 0 4px var(--shadow-color-blue);
+    }
+    .input-field:focus ~ .icon { color: var(--blue-accent); }
+    
+    /* إخفاء الحقول الخاصة بإنشاء الحساب بشكل افتراضي */
+    #signup-fields { display: none; }
+    
+    /* --- قسم الخيارات (تذكرني، نسيت كلمة المرور) --- */
+    .options {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      margin-bottom: 25px;
+    }
+    .remember-me { display: flex; align-items: center; gap: 8px; color: var(--text-secondary); cursor: pointer; }
+    .remember-me input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--blue-accent); cursor: pointer; }
+    .forgot-password { color: var(--blue-accent); text-decoration: none; transition: var(--transition); font-weight: 600; }
+    .forgot-password:hover { text-decoration: underline; filter: brightness(1.2); }
+    
+    /* --- زر الإرسال الرئيسي --- */
+    .main-btn {
+      width: 100%;
+      padding: 15px;
+      background: var(--gold-accent);
+      color: #1a1a1c; /* لون نص داكن للتباين مع الخلفية الذهبية */
+      font-size: 18px;
+      font-weight: 700;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: var(--transition);
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 4px 15px var(--shadow-color-gold);
+    }
+    /* تحسين تأثير الـ hover للزر */
+    .main-btn:hover:not(:disabled) {
+      box-shadow: 0 6px 20px var(--shadow-color-gold);
+      transform: translateY(-3px);
+      filter: brightness(1.1);
+    }
+    .main-btn:disabled { 
+      background: var(--disabled-color); 
+      color: var(--text-secondary);
+      cursor: not-allowed; 
+      box-shadow: none;
+    }
+    
+    /* --- تبديل بين تسجيل الدخول وإنشاء حساب --- */
+    .toggle-form { margin-top: 30px; font-size: 15px; text-align: center; color: var(--text-secondary); }
+    .toggle-form a { color: var(--blue-accent); font-weight: 600; text-decoration: none; cursor: pointer; transition: var(--transition); }
+    .toggle-form a:hover { filter: brightness(1.2); }
+
+    /* --- أيقونة إظهار/إخفاء كلمة المرور --- */
+    .password-toggle {
+      position: absolute;
+      top: 50%;
+      left: 15px;
+      transform: translateY(-50%);
+      color: var(--text-secondary);
+      cursor: pointer;
+      z-index: 2;
+      padding: 5px; 
+    }
+    
+    /* --- نافذة الإشعارات --- */
+    .notification {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translate(-50%, -150%);
+      padding: 15px 25px;
+      border-radius: 8px;
+      color: var(--text-color);
+      font-weight: 600;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      z-index: 1000;
+      transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+      border-left: 5px solid; /* إضافة شريط جانبي مميز */
+    }
+    .notification.show { transform: translate(-50%, 0); }
+    .notification.success { background-color: #2b2b2e; border-color: var(--green-accent); }
+    .notification.error { background-color: #2b2b2e; border-color: var(--red-accent); }
+    
+    /* --- أيقونة التحميل --- */
+    .loader {
+      display: none;
+      width: 22px;
+      height: 22px;
+      border: 3px solid rgba(26, 26, 28, 0.3);
+      border-radius: 50%;
+      border-top-color: #1a1a1c;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* --- تصميم مخصص لحقل رفع الملف --- */
+    .custom-file-upload-container { text-align: center; margin-bottom: 24px; }
+    input[type="file"] { display: none; }
+    .custom-file-upload {
+        display: inline-block;
+        padding: 12px 25px;
+        cursor: pointer;
+        background-color: var(--card-bg);
+        border: 2px dashed var(--border-color);
+        border-radius: 10px;
+        color: var(--blue-accent); /* استخدام اللون الأزرق هنا */
+        transition: var(--transition);
+        font-weight: 600;
+    }
+    .custom-file-upload:hover { 
+      background-color: var(--border-color); 
+      border-color: var(--blue-accent); 
+    }
+    .custom-file-upload i { margin-left: 8px; }
+    .file-name-display {
+        display: block;
+        margin-top: 12px;
+        font-size: 14px;
+        color: var(--text-secondary);
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+  </style>
+</head>
+<body>
+  
+  <div class="form-container">
+    <div class="form-header">
+      <h2 id="form-title">تسجيل الدخول</h2>
+      <p id="form-subtitle">مرحباً بعودتك! يرجى إدخال بياناتك</p>
+    </div>
+    
+    <div class="form-content">
+      <form id="auth-form" novalidate>
+        <div id="signup-fields">
+          <div class="input-group">
+              <span class="icon"><i class="fas fa-user"></i></span>
+              <input class="input-field" type="text" id="name" placeholder="الاسم الكامل" autocomplete="name" required>
+          </div>
+          <div class="custom-file-upload-container">
+               <label for="profile-pic" class="custom-file-upload">
+                   <i class="fas fa-cloud-upload-alt"></i>
+                   <span>اختر صورة الملف الشخصي</span>
+               </label>
+               <input id="profile-pic" type="file" accept="image/*" required>
+               <span id="file-name" class="file-name-display">الصورة إلزامية</span>
+          </div>
+        </div>
+        
+        <div class="input-group">
+            <span class="icon"><i class="fas fa-envelope"></i></span>
+            <input class="input-field" type="email" id="email" placeholder="example@domain.com" autocomplete="email" required>
+        </div>
+        
+        <div class="input-group">
+            <span class="icon"><i class="fas fa-lock"></i></span>
+            <input class="input-field" type="password" id="password" placeholder="أدخل كلمة المرور" autocomplete="current-password" required>
+            <span class="password-toggle" id="password-toggle" aria-label="إظهار/إخفاء كلمة المرور"><i class="fas fa-eye"></i></span>
+        </div>
+        
+        <div id="login-options">
+            <div class="options">
+                <label class="remember-me"><input type="checkbox" id="remember-me"> تذكرني</label>
+                <a href="#" class="forgot-password">نسيت كلمة المرور؟</a>
+            </div>
+        </div>
+        
+        <button type="submit" class="main-btn" id="main-btn">
+          <span id="btn-text">دخول</span>
+          <div class="loader" id="btn-loader"></div>
+        </button>
+      </form>
+
+      <div class="toggle-form" id="toggle-container">
+        ليس لديك حساب؟ <a id="toggle-link">إنشاء حساب</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="notification" class="notification"></div>
+
+  <script type="module">
+    // --- استيراد الوحدات اللازمة من Firebase ---
+    // -- تعديل جديد --: إضافة onAuthStateChanged للتحقق من حالة المستخدم
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-auth.js";
+    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
+
+    // --- إعدادات Firebase ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyDHVwsR3xlJdQz189v-LYtCGGGGbg9h4bU",
+      authDomain: "information-5dffc.firebaseapp.com",
+      databaseURL: "https://information-5dffc-default-rtdb.firebaseio.com",
+      projectId: "information-5dffc",
+      storageBucket: "information-5dffc.firebasestorage.app",
+      messagingSenderId: "622479615827",
+      appId: "1:622479615827:web:51c9ce29f8e26fbce1a3a6"
+    };
+
+    // --- تهيئة Firebase ---
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    // -- تعديل جديد --: التحقق من حالة المصادقة عند تحميل الصفحة
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            // المستخدم مسجل دخوله، قم بتوجيهه إلى لوحة التحكم
+            console.log("User is already logged in. Redirecting to dashboard...");
+            window.location.href = 'dashboard.html';
+        } else {
+            // المستخدم غير مسجل دخوله، اسمح له برؤية الصفحة
+            console.log("No user is logged in. Showing auth form.");
+            document.body.style.visibility = 'visible'; // إظهار المحتوى بعد التحقق
+        }
+    });
+
+    // -- تعديل جديد --: إخفاء محتوى الصفحة مؤقتاً لتجنب الوميض
+    document.body.style.visibility = 'hidden';
+
+    // --- الوصول إلى عناصر DOM ---
+    const authForm = document.getElementById('auth-form');
+    const formTitle = document.getElementById("form-title");
+    const formSubtitle = document.getElementById("form-subtitle");
+    const signupFields = document.getElementById("signup-fields");
+    const nameInput = document.getElementById("name");
+    const profilePicInput = document.getElementById("profile-pic");
+    const emailInput = document.getElementById("email");
+    const passInput = document.getElementById("password");
+    const mainBtn = document.getElementById("main-btn");
+    const btnText = document.getElementById("btn-text");
+    const btnLoader = document.getElementById("btn-loader");
+    const toggleContainer = document.getElementById("toggle-container");
+    const loginOptions = document.getElementById("login-options");
+    const passwordToggle = document.getElementById("password-toggle");
+    const notification = document.getElementById("notification");
+    const fileNameDisplay = document.getElementById('file-name');
+
+    let isSignUp = false;
+
+    // --- دالة إظهار الإشعارات ---
+    function showNotification(message, type) {
+        notification.textContent = message;
+        notification.className = `notification ${type} show`;
+        setTimeout(() => {
+            notification.classList.remove("show");
+        }, 3500);
+    }
+    
+    // --- دالة لترجمة أخطاء Firebase إلى رسائل مفهومة ---
+    function getFriendlyErrorMessage(error) {
+        const defaultMessage = "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.";
+        if (!error || !error.code) return defaultMessage;
+        
+        switch (error.code) {
+            case 'auth/invalid-email': return 'البريد الإلكتروني الذي أدخلته غير صالح.';
+            case 'auth/invalid-credential': return 'البريد الإلكتروني أو كلمة المرور غير صحيحة.';
+            case 'auth/email-already-in-use': return 'هذا البريد الإلكتروني مسجل بالفعل.';
+            case 'auth/weak-password': return 'كلمة المرور ضعيفة جداً، يجب أن تكون 6 أحرف على الأقل.';
+            case 'auth/network-request-failed': return 'فشل الاتصال بالشبكة. يرجى التحقق من اتصالك بالإنترنت.';
+            default: return error.message.includes("⚠️") ? error.message.substring(2) : defaultMessage;
+        }
+    }
+
+    // --- تبديل إظهار/إخفاء كلمة المرور ---
+    passwordToggle.addEventListener('click', function() {
+        const isPassword = passInput.type === 'password';
+        passInput.type = isPassword ? 'text' : 'password';
+        this.querySelector('i').classList.toggle('fa-eye', !isPassword);
+        this.querySelector('i').classList.toggle('fa-eye-slash', isPassword);
+    });
+
+    // --- عرض اسم الملف المختار ---
+    profilePicInput.addEventListener('change', () => {
+        const successColor = getComputedStyle(document.documentElement).getPropertyValue('--green-accent');
+        const secondaryColor = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary');
+        if (profilePicInput.files.length > 0) {
+            fileNameDisplay.textContent = profilePicInput.files[0].name;
+            fileNameDisplay.style.color = successColor;
+        } else {
+            fileNameDisplay.textContent = 'الصورة إلزامية';
+            fileNameDisplay.style.color = secondaryColor;
+        }
+    });
+
+    // --- دالة تبديل واجهة النموذج ---
+    function toggleFormView() {
+      isSignUp = !isSignUp;
+      authForm.reset(); 
+      const secondaryColor = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary');
+      fileNameDisplay.textContent = 'الصورة إلزامية';
+      fileNameDisplay.style.color = secondaryColor;
+
+      if (isSignUp) {
+        formTitle.textContent = "إنشاء حساب جديد";
+        formSubtitle.textContent = "أهلاً بك! قم بإنشاء حساب جديد للبدء.";
+        signupFields.style.display = "block";
+        btnText.textContent = "إنشاء حساب";
+        toggleContainer.innerHTML = 'لديك حساب بالفعل؟ <a id="toggle-link">تسجيل الدخول</a>';
+        loginOptions.style.display = "none";
+        passInput.setAttribute('autocomplete', 'new-password');
+      } else {
+        formTitle.textContent = "تسجيل الدخول";
+        formSubtitle.textContent = "مرحباً بعودتك! يرجى إدخال بياناتك";
+        signupFields.style.display = "none";
+        btnText.textContent = "دخول";
+        toggleContainer.innerHTML = 'ليس لديك حساب؟ <a id="toggle-link">إنشاء حساب</a>';
+        loginOptions.style.display = "block";
+        passInput.setAttribute('autocomplete', 'current-password');
+      }
+    }
+    
+    // استخدام event delegation للرابط
+    toggleContainer.addEventListener('click', (e) => {
+        if (e.target && e.target.id === 'toggle-link') {
+            e.preventDefault();
+            toggleFormView();
+        }
+    });
+
+    // --- دالة معالجة حالة التحميل للزر ---
+    function setLoading(isLoading) {
+        btnText.style.display = isLoading ? "none" : "block";
+        btnLoader.style.display = isLoading ? "block" : "none";
+        mainBtn.disabled = isLoading;
+    }
+
+    // --- معالجة إرسال النموذج ---
+    authForm.addEventListener("submit", async (e) => {
+      e.preventDefault(); 
+      
+      const email = emailInput.value.trim();
+      const password = passInput.value.trim();
+      
+      if (!email || !password) {
+        showNotification("⚠️ يرجى ملء حقلي البريد الإلكتروني وكلمة المرور", "error");
+        return;
+      }
+      
+      setLoading(true);
+
+      if (isSignUp) {
+          // --- منطق إنشاء حساب جديد ---
+          const name = nameInput.value.trim();
+          const profilePicFile = profilePicInput.files[0];
+
+          if (!name || !profilePicFile) {
+            showNotification("⚠️ الرجاء ملء الاسم واختيار صورة شخصية", "error");
+            setLoading(false);
+            return;
+          }
+          if (password.length < 6) {
+            showNotification("⚠️ كلمة المرور يجب أن تكون 6 أحرف على الأقل", "error");
+            setLoading(false);
+            return;
+          }
+
+          const reader = new FileReader();
+          reader.readAsDataURL(profilePicFile);
+          
+          reader.onload = async () => {
+            try {
+                // ملاحظة: تخزين الصور كـ Base64 في Realtime Database مناسب للصور الصغيرة فقط.
+                // للتطبيقات الكبيرة، يفضل استخدام Firebase Storage.
+                const profilePictureBase64 = reader.result;
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                
+                await updateProfile(user, { displayName: name });
+                
+                const referralCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+                
+                await set(ref(db, "users/" + user.uid), {
+                  name: name,
+                  email: email,
+                  profilePicture: profilePictureBase64,
+                  referralCode: referralCode,
+                  createdAt: new Date().toISOString()
+                });
+                
+                showNotification("✅ تم إنشاء الحساب بنجاح! جاري التوجيه...", "success");
+                // -- تعديل جديد --: التوجيه إلى لوحة التحكم بعد إنشاء الحساب
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 2000);
+
+            } catch(error) {
+                 const errorMessage = "❌ " + getFriendlyErrorMessage(error);
+                 showNotification(errorMessage, "error");
+                 console.error("Firebase Signup Error:", error);
+                 setLoading(false); // -- تعديل --: التأكد من إيقاف التحميل عند الخطأ
+            }
+            // -- تعديل --: لا حاجة لإيقاف التحميل هنا لأنه يحدث في التوجيه
+          };
+
+          reader.onerror = () => { 
+            showNotification("❌ فشل في قراءة الصورة، يرجى المحاولة مرة أخرى", "error");
+            setLoading(false);
+          };
+
+        } else {
+          // --- منطق تسجيل الدخول ---
+          try {
+            await signInWithEmailAndPassword(auth, email, password);
+            showNotification("✅ تم تسجيل الدخول بنجاح! جاري التوجيه...", "success");
+            
+            // -- تعديل جديد --: التوجيه إلى لوحة التحكم بعد تسجيل الدخول
+            setTimeout(() => { 
+                window.location.href = "dashboard.html"; 
+            }, 1500); 
+
+          } catch (error) {
+              const errorMessage = "❌ " + getFriendlyErrorMessage(error);
+              showNotification(errorMessage, "error");
+              console.error("Firebase Login Error:", error);
+              setLoading(false);
+          }
+        }
+    });
+  </script>
+</body>
+</html>
