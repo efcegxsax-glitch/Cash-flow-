@@ -1,0 +1,178 @@
+/*
+  Theme stylesheet: additive visual enhancements, no behavior changes.
+  - Overrides shared CSS variables defined in pages
+  - Polishes buttons, inputs, cards, modals
+  - Improves focus states and accessibility
+  - Adds subtle depth, blur (when supported), and smooth transitions
+*/
+
+:root {
+  /* Color system (non-intrusive adjustments) */
+  --bg-gradient-start: #1f2023;
+  --bg-gradient-end: #121316;
+  --card-bg: #24262b;
+  --text-color: #ffffff;
+  --text-secondary: #b6b7bb;
+
+  --gold-accent: #fcd75c;
+  --blue-accent: #6a7bff;
+  --green-accent: #4ade80;
+  --red-accent: #ef4444;
+  --disabled-color: #585a60;
+  --border-color: #3b3d44;
+
+  /* Motion, radii, and shadows */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+
+  --shadow-1: 0 4px 12px rgba(0, 0, 0, 0.25);
+  --shadow-2: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-color-blue: rgba(106, 123, 255, 0.35);
+}
+
+/* Base polish */
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+body {
+  background: linear-gradient(140deg, var(--bg-gradient-start), var(--bg-gradient-end));
+  color: var(--text-color);
+}
+
+/* Scrollbar (webkit-based) */
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
+
+/* Focus visibility for accessibility */
+:where(button, [type="button"], [type="submit"], a, input, textarea, select):focus { outline: none; }
+:where(button, [type="button"], [type="submit"], a, input, textarea, select):focus-visible {
+  box-shadow: 0 0 0 3px rgba(106, 123, 255, 0.35), 0 0 0 1px var(--blue-accent) inset;
+  transition: var(--transition);
+}
+
+/* Cards and containers */
+.stat-card,
+.info-card,
+.balance-display,
+.modal-content,
+.room-card,
+.top-bar .icon-btn,
+.main-nav-bar,
+.daily-balance-content {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-1);
+}
+
+/* Backdrop blur where supported */
+@supports (backdrop-filter: blur(8px)) or (-webkit-backdrop-filter: blur(8px)) {
+  .main-nav-bar,
+  .input-container,
+  .global-announcement-banner {
+    background-color: rgba(36, 38, 43, 0.75);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+}
+
+/* Buttons */
+.main-btn,
+.primary-btn,
+.store-btn,
+#start-timer-btn,
+.tab-btn.active,
+.modal-button,
+.confirm-btn {
+  border-radius: var(--radius-md);
+  box-shadow: 0 6px 18px var(--shadow-color-blue);
+  transition: transform 0.2s ease, filter 0.2s ease, box-shadow 0.25s ease;
+}
+
+.main-btn:hover:not(:disabled),
+.primary-btn:hover:not(:disabled),
+.store-btn:hover:not(:disabled),
+#start-timer-btn:hover:not(:disabled),
+.tab-btn.active:hover,
+.modal-button:hover,
+.confirm-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+  box-shadow: 0 10px 28px var(--shadow-color-blue);
+}
+
+.main-btn:active,
+.primary-btn:active,
+.store-btn:active,
+#start-timer-btn:active,
+.tab-btn.active:active,
+.modal-button:active,
+.confirm-btn:active {
+  transform: translateY(0);
+  filter: brightness(0.98);
+}
+
+/* Icon buttons */
+.top-bar .icon-btn {
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+.top-bar .icon-btn:hover { transform: translateY(-2px); background-color: #34363c; }
+
+/* Inputs */
+.input-field,
+.modal-input,
+.message-input,
+.form-group input,
+#code-input {
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border-color);
+  background-color: #1b1c20;
+  color: var(--text-color);
+  transition: var(--transition);
+}
+
+.input-field:focus,
+.modal-input:focus,
+.message-input:focus,
+.form-group input:focus,
+#code-input:focus {
+  border-color: var(--blue-accent);
+  box-shadow: 0 0 0 4px var(--shadow-color-blue);
+}
+
+/* Message bubbles (chat) */
+.received .message-text { background: linear-gradient(180deg, #3e3f42, #34363a); }
+.sent .message-text { background: linear-gradient(180deg, #2b5278, #254a6d); }
+
+/* Room card overlay depth */
+.room-card-overlay { background: linear-gradient(to top, rgba(0,0,0,0.9) 20%, rgba(0,0,0,0.25) 65%); }
+
+/* History list items */
+.history-list li {
+  background: rgba(0,0,0,0.18);
+  border-radius: var(--radius-sm);
+}
+
+/* Modals */
+.modal-content {
+  background: linear-gradient(145deg, #2a2c31, #222429);
+  box-shadow: var(--shadow-2);
+}
+
+/* Countdown emphasis */
+#countdown-timer { text-shadow: 0 0 18px rgba(0,0,0,0.7); }
+
+/* Gift drawer polish (chat) */
+#gift-drawer { box-shadow: 0 -12px 30px rgba(0, 0, 0, 0.45); }
+.gift-item.selected { box-shadow: 0 0 0 2px var(--btn-active) inset; }
+
+/* Better hover for links */
+.toggle-form a,
+.forgot-password,
+.main-nav-bar a { transition: color 0.2s ease, transform 0.2s ease; }
+.main-nav-bar a:hover { transform: translateY(-2px); }
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; }
+}
